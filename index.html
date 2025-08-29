@@ -1,726 +1,637 @@
 <!DOCTYPE html>
 <html lang="ja">
-
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>インタラクティブで学ぶ大正〜昭和初期</title>
-    <script src="https://cdn.tailwindcss.com"></script&gt;
-<script src="https://cdn.jsdelivr.net/npm/chart.js"></script&gt;
-<!-- Chosen Palette: Warm Neutrals with Blue Accent -->
-<!-- Application Structure Plan: このSPAは、ユーザーが能動的に歴史を探索できるよう、トップに主要な時代（大正政変期、大戦景気期、恐慌期）を選択できるナビゲーションを配置したテーマ別のセクション構造を採用します。各セクションは「政治」「経済」「社会・文化」のタブで切り替え可能とし、複雑な情報を整理して提示します。Hey! Say! JUMPのメンバーをナビゲーター役として各所に登場させ、解説をより親しみやすくすることで、学習意欲を高めることを狙います。この構造は、単なる情報の羅列ではなく、ユーザーが興味のあるテーマから深掘りできるため、学習効果とエンゲージメントの向上に最適と判断しました。 -->
-<!-- Visualization & Content Choices: 政治の変遷は、インタラクティブなタイムライン（HTML/CSS/JS）で視覚的に表現し、クリックで詳細情報をポップアップ表示します。経済の推移（大戦景気→恐慌）は、Chart.jsを用いた折れ線グラフでデータの変動を明確に示します。社会運動や文化の広がりは、アイコン付きのカードレイアウト（HTML/Tailwind）で紹介し、クリックすると関連する人物（Hey! Say! JUMPメンバーの例え付き）の詳細が表示されるようにします。これにより、情報の関連性を直感的に理解させます。SVG/Mermaidは使用しません。 -->
-<!-- CONFIRMATION: NO SVG graphics used. NO Mermaid JS used. -->
-<style>
-@import url('https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;700&display=swap&#39;);
-html { scroll-behavior: smooth; }
-body { font-family: 'Noto Sans JP', sans-serif; background-color: #f8f5f1; color: #3a3a3a; } /* 全体の背景を少し明るく */
-.bg-header { background-image: linear-gradient(to right, #2563eb, #6366f1); } /* ヘッダーをグラデーションに */
-.bg-main { background-color: #f8f5f1; } /* メインコンテンツの背景も明るく */
-.card { background-color: #ffffff; border: 1px solid #e2e8f0; transition: all 0.3s ease; border-radius: 0.5rem; }
-.card:hover { transform: translateY(-5px); box-shadow: 0 12px 20px -5px rgba(0, 0, 0, 0.15), 0 5px 8px -3px rgba(0, 0, 0, 0.08); } /* ホバーシャドウを強調 */
-.nav-button { transition: all 0.3s ease; border-radius: 9999px; font-weight: 600; /* フォントを少し太く */ }
-.nav-button.active {
-background-image: linear-gradient(to right, #3b82f6, #60a5fa); /* アクティブボタンをグラデーションに */
-color: white;
-box-shadow: 0 4px 8px rgba(59, 130, 246, 0.4); /* アクティブボタンにシャドウ */
-}
-.content-section { display: none; }
-.content-section.active { display: block; }
-.chart-container { position: relative; width: 100%; max-width: 600px; margin-left: auto; margin-right: auto; height: 300px; max-height: 400px; }
-@media (min-width: 768px) { .chart-container { height: 350px; } }
-.timeline { border-left: 3px solid #3b82f6; } /* タイムラインの線を鮮やかに */
-.timeline-item { position: relative; padding-left: 2rem; margin-bottom: 2rem; cursor: pointer; border-radius: 0.5rem; transition: background-color 0.2s ease, transform 0.2s ease; }
-.timeline-item:hover { background-color: #e0f2fe; transform: translateX(5px); } /* ホバーエフェクトを追加 */
-.timeline-dot { position: absolute; left: -11px; top: 50%; transform: translateY(-50%); width: 20px; height: 20px; background-color: #1d4ed8; border-radius: 50%; border: 3px solid #f8f5f1; } /* タイムラインドットを濃い青に */
-.hsj-card {
-background: linear-gradient(135deg, #e0f7fa, #bbdefb); /* HSJカードの背景グラデーションを強調 */
-border-left: 5px solid; /* 色は各セクションで指定 */
-border-radius: 0.5rem;
-box-shadow: 0 5px 15px rgba(0, 0, 0, 0.08); /* HSJカードにシャドウ */
-}
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>インタラクティブで学ぶ大正〜昭和初期</title>
 
-/* Modal specific styles */
-.modal-overlay {
-position: fixed;
-top: 0;
-left: 0;
-width: 100%;
-height: 100%;
-background-color: rgba(0, 0, 0, 0.7); /* オーバーレイを少し濃く */
-display: flex;
-justify-content: center;
-align-items: center;
-z-index: 1000;
-opacity: 0;
-visibility: hidden;
-transition: opacity 0.3s ease, visibility 0.3s ease;
-}
-.modal-overlay.active {
-opacity: 1;
-visibility: visible;
-}
-.modal-content {
-background-color: #ffffff;
-padding: 2.5rem; /* パディングを増やす */
-border-radius: 0.75rem;
-max-width: 90%;
-max-height: 90vh;
-overflow-y: auto;
-position: relative;
-box-shadow: 0 15px 30px rgba(0, 0, 0, 0.25); /* モーダルのシャドウを強調 */
-border: 2px solid #3b82f6; /* モーダルに青いボーダー */
-}
-.modal-close-button {
-position: absolute;
-top: 1rem;
-right: 1rem;
-background: none;
-border: none;
-font-size: 1.8rem; /* クローズボタンを大きく */
-cursor: pointer;
-color: #4a5568;
-transition: color 0.2s ease;
-}
-.modal-close-button:hover {
-color: #ef4444; /* ホバーで赤に */
-}
+  <!-- Tailwind / Chart.js -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
-/* Section specific color accents */
-#member-yabu .hsj-card { border-left-color: #2563eb; } /* 薮宏太 - 青 */
-#member-yabu h2 { color: #2563eb; }
-#member-yamada .hsj-card { border-left-color: #ef4444; } /* 山田涼介 - 赤 */
-#member-yamada h2 { color: #ef4444; }
-#member-nakajima .hsj-card { border-left-color: #9333ea; } /* 中島裕翔 - 紫 */
-#member-nakajima h2 { color: #9333ea; }
-#member-chinen .hsj-card { border-left-color: #ec4899; } /* 知念侑李 - ピンク */
-#member-chinen h2 { color: #ec4899; }
-#member-arioka .hsj-card { border-left-color: #f97316; } /* 有岡大貴 - オレンジ */
-#member-arioka h2 { color: #f97316; }
-#member-inoo .hsj-card { border-left-color: #0d9488; } /* 伊野尾慧 - ティール */
-#member-inoo h2 { color: #0d9488; }
-#member-takaki .hsj-card { border-left-color: #4f46e5; } /* 髙木雄也 - インディゴ */
-#member-takaki h2 { color: #4f46e5; }
-#member-yaotome .hsj-card { border-left-color: #eab308; } /* 八乙女光 - アンバー */
-#member-yaotome h2 { color: #eab308; }
+  <!-- Chosen Palette: Warm Neutrals with Blue Accent -->
+  <!-- Application Structure Plan: このSPAは、ユーザーが能動的に歴史を探索できるよう、トップに主要な時代（大正政変期、大戦景気期、恐慌期）を選択できるナビゲーションを配置したテーマ別のセクション構造を採用します。各セクションは「政治」「経済」「社会・文化」のタブで切り替え可能とし、複雑な情報を整理して提示します。Hey! Say! JUMPのメンバーをナビゲーター役として各所に登場させ、解説をより親しみやすくすることで、学習意欲を高めることを狙います。この構造は、単なる情報の羅列ではなく、ユーザーが興味のあるテーマから深掘りできるため、学習効果とエンゲージメントの向上に最適と判断しました。 -->
+  <!-- Visualization & Content Choices: 政治の変遷は、インタラクティブなタイムライン（HTML/CSS/JS）で視覚的に表現し、クリックで詳細情報をポップアップ表示します。経済の推移（大戦景気→恐慌）は、Chart.jsを用いた折れ線グラフでデータの変動を明確に示します。社会運動や文化の広がりは、アイコン付きのカードレイアウト（HTML/Tailwind）で紹介し、クリックすると関連する人物（Hey! Say! JUMPメンバーの例え付き）の詳細が表示されるようにします。これにより、情報の関連性を直感的に理解させます。SVG/Mermaidは使用しません。 -->
+  <!-- CONFIRMATION: NO SVG graphics used. NO Mermaid JS used. -->
 
-/* Social movement card hover effects */
-.social-movement-card:hover {
-background-color: #e0f2fe; /* ホバー背景を明るい青に */
-transform: translateY(-3px); /* わずかに上に移動 */
-box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
-}
-.social-movement-card > div.text-4xl { /* アイコンの色 */
-transition: color 0.2s ease;
-}
-.social-movement-card:hover > div.text-4xl {
-color: #1e40af; /* ホバーでアイコンを濃い青に */
-}
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;700&display=swap');
 
-/* Quiz specific styles */
-.quiz-option {
-background-color: #ffffff;
-border: 2px solid #a78bfa; /* 薄い紫のボーダー */
-border-radius: 0.5rem;
-padding: 1rem;
-margin-bottom: 0.75rem;
-cursor: pointer;
-transition: all 0.2s ease;
-font-weight: 500;
-color: #4a5568;
-}
-.quiz-option:hover {
-background-color: #ede9fe; /* 薄い紫にホバー */
-transform: translateY(-2px);
-box-shadow: 0 4px 8px rgba(168, 85, 247, 0.2);
-}
-.quiz-option.selected {
-background-color: #8b5cf6; /* 選択されたら濃い紫 */
-color: white;
-border-color: #8b5cf6;
-box-shadow: 0 6px 12px rgba(168, 85, 247, 0.4);
-}
-.quiz-option.correct {
-background-color: #10b981; /* 正解は緑 */
-color: white;
-border-color: #10b981;
-}
-.quiz-option.incorrect {
-background-color: #ef4444; /* 不正解は赤 */
-color: white;
-border-color: #ef4444;
-}
-.quiz-feedback {
-background-color: #fffbeb; /* フィードバック背景 */
-border-left: 5px solid #f59e0b; /* 黄色いボーダー */
-padding: 1rem;
-border-radius: 0.5rem;
-margin-top: 1.5rem;
-font-size: 1.1rem;
-}
-.quiz-button {
-background-image: linear-gradient(to right, #3b82f6, #60a5fa);
-color: white;
-padding: 0.75rem 2rem;
-border-radius: 9999px;
-font-weight: 700;
-transition: all 0.3s ease;
-box-shadow: 0 4px 8px rgba(59, 130, 246, 0.4);
-}
-.quiz-button:hover {
-transform: translateY(-2px);
-box-shadow: 0 6px 12px rgba(59, 130, 246, 0.6);
-}
-.quiz-button:disabled {
-background-image: linear-gradient(to right, #9ca3af, #d1d5db);
-cursor: not-allowed;
-box-shadow: none;
-transform: none;
-}
-</style>
+    html { scroll-behavior: smooth; }
+    body { font-family: 'Noto Sans JP', sans-serif; background-color: #f8f5f1; color: #3a3a3a; }
+    .bg-header { background-image: linear-gradient(to right, #2563eb, #6366f1); }
+    .bg-main { background-color: #f8f5f1; }
+    .card { background-color: #ffffff; border: 1px solid #e2e8f0; transition: all 0.3s ease; border-radius: 0.5rem; }
+    .card:hover { transform: translateY(-5px); box-shadow: 0 12px 20px -5px rgba(0,0,0,0.15), 0 5px 8px -3px rgba(0,0,0,0.08); }
+
+    .nav-button { transition: all 0.3s ease; border-radius: 9999px; font-weight: 600; }
+    .nav-button.active {
+      background-image: linear-gradient(to right, #3b82f6, #60a5fa);
+      color: white;
+      box-shadow: 0 4px 8px rgba(59,130,246,.4);
+    }
+
+    .content-section { display: none; }
+    .content-section.active { display: block; }
+
+    .chart-container { position: relative; width: 100%; max-width: 600px; margin-left: auto; margin-right: auto; height: 300px; max-height: 400px; }
+    @media (min-width: 768px) { .chart-container { height: 350px; } }
+
+    .timeline { border-left: 3px solid #3b82f6; }
+    .timeline-item { position: relative; padding-left: 2rem; margin-bottom: 2rem; cursor: pointer; border-radius: 0.5rem; transition: background-color .2s ease, transform .2s ease; }
+    .timeline-item:hover { background-color: #e0f2fe; transform: translateX(5px); }
+    .timeline-dot { position: absolute; left: -11px; top: 50%; transform: translateY(-50%); width: 20px; height: 20px; background-color: #1d4ed8; border-radius: 50%; border: 3px solid #f8f5f1; }
+
+    .hsj-card {
+      background: linear-gradient(135deg, #e0f7fa, #bbdefb);
+      border-left: 5px solid;
+      border-radius: 0.5rem;
+      box-shadow: 0 5px 15px rgba(0,0,0,.08);
+    }
+
+    /* Modal */
+    .modal-overlay {
+      position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+      background-color: rgba(0,0,0,.7);
+      display: flex; justify-content: center; align-items: center;
+      z-index: 1000; opacity: 0; visibility: hidden; transition: opacity .3s ease, visibility .3s ease;
+    }
+    .modal-overlay.active { opacity: 1; visibility: visible; }
+    .modal-content {
+      background-color: #fff; padding: 2.5rem; border-radius: 0.75rem;
+      max-width: 90%; max-height: 90vh; overflow-y: auto; position: relative;
+      box-shadow: 0 15px 30px rgba(0,0,0,.25); border: 2px solid #3b82f6;
+    }
+    .modal-close-button {
+      position: absolute; top: 1rem; right: 1rem; background: none; border: none;
+      font-size: 1.8rem; cursor: pointer; color: #4a5568; transition: color .2s ease;
+    }
+    .modal-close-button:hover { color: #ef4444; }
+
+    /* Section color accents */
+    #member-yabu .hsj-card { border-left-color: #2563eb; }
+    #member-yabu h2 { color: #2563eb; }
+    #member-yamada .hsj-card { border-left-color: #ef4444; }
+    #member-yamada h2 { color: #ef4444; }
+    #member-nakajima .hsj-card { border-left-color: #9333ea; }
+    #member-nakajima h2 { color: #9333ea; }
+    #member-chinen .hsj-card { border-left-color: #ec4899; }
+    #member-chinen h2 { color: #ec4899; }
+    #member-arioka .hsj-card { border-left-color: #f97316; }
+    #member-arioka h2 { color: #f97316; }
+    #member-inoo .hsj-card { border-left-color: #0d9488; }
+    #member-inoo h2 { color: #0d9488; }
+    #member-takaki .hsj-card { border-left-color: #4f46e5; }
+    #member-takaki h2 { color: #4f46e5; }
+    #member-yaotome .hsj-card { border-left-color: #eab308; }
+    #member-yaotome h2 { color: #eab308; }
+
+    /* Social movement cards */
+    .social-movement-card:hover { background-color: #e0f2fe; transform: translateY(-3px); box-shadow: 0 4px 8px rgba(0,0,0,.1); }
+    .social-movement-card > div.text-4xl { transition: color .2s ease; }
+    .social-movement-card:hover > div.text-4xl { color: #1e40af; }
+
+    /* Quiz */
+    .quiz-option { background-color: #fff; border: 2px solid #a78bfa; border-radius: .5rem; padding: 1rem; margin-bottom: .75rem; cursor: pointer; transition: all .2s ease; font-weight: 500; color: #4a5568; }
+    .quiz-option:hover { background-color: #ede9fe; transform: translateY(-2px); box-shadow: 0 4px 8px rgba(168,85,247,.2); }
+    .quiz-option.selected { background-color: #8b5cf6; color: #fff; border-color: #8b5cf6; box-shadow: 0 6px 12px rgba(168,85,247,.4); }
+    .quiz-option.correct { background-color: #10b981; color: #fff; border-color: #10b981; }
+    .quiz-option.incorrect { background-color: #ef4444; color: #fff; border-color: #ef4444; }
+
+    .quiz-feedback { background-color: #fffbeb; border-left: 5px solid #f59e0b; padding: 1rem; border-radius: .5rem; margin-top: 1.5rem; font-size: 1.1rem; }
+
+    .quiz-button {
+      background-image: linear-gradient(to right, #3b82f6, #60a5fa);
+      color: white; padding: .75rem 2rem; border-radius: 9999px; font-weight: 700;
+      transition: all .3s ease; box-shadow: 0 4px 8px rgba(59,130,246,.4);
+    }
+    .quiz-button:hover { transform: translateY(-2px); box-shadow: 0 6px 12px rgba(59,130,246,.6); }
+    .quiz-button:disabled { background-image: linear-gradient(to right, #9ca3af, #d1d5db); cursor: not-allowed; box-shadow: none; transform: none; }
+  </style>
 </head>
 <body class="bg-main">
+  <header class="bg-header text-white p-6 shadow-md sticky top-0 z-50">
+    <div class="container mx-auto text-center">
+      <h1 class="text-3xl md:text-4xl font-bold">💖 Hey! Say! JUMPと学ぶ！大正〜昭和初期 💖</h1>
+      <p class="mt-2 text-lg">激動の時代をメンバーと一緒に探検しよう！</p>
+    </div>
+  </header>
 
-<header class="bg-header text-white p-6 shadow-md sticky top-0 z-50">
-<div class="container mx-auto text-center">
-<h1 class="text-3xl md:text-4xl font-bold">💖 Hey! Say! JUMPと学ぶ！大正〜昭和初期 💖</h1>
-<p class="mt-2 text-lg">激動の時代をメンバーと一緒に探検しよう！</p>
-</div>
-</header>
+  <nav class="bg-white shadow-sm sticky top-[88px] z-40" role="navigation" aria-label="メンバー別セクション切替">
+    <div class="container mx-auto flex justify-center items-center p-4 space-x-2 md:space-x-4 flex-wrap" role="tablist" aria-label="ナビゲーション">
+      <button type="button" role="tab" aria-selected="true" aria-controls="member-yabu" aria-expanded="true" data-target="member-yabu" class="nav-button active px-4 py-2 rounded-full font-semibold text-gray-700 hover:bg-blue-100 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-50">薮宏太</button>
+      <button type="button" role="tab" aria-selected="false" aria-controls="member-yamada" aria-expanded="false" data-target="member-yamada" class="nav-button px-4 py-2 rounded-full font-semibold text-gray-700 hover:bg-blue-100 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-50">山田涼介</button>
+      <button type="button" role="tab" aria-selected="false" aria-controls="member-nakajima" aria-expanded="false" data-target="member-nakajima" class="nav-button px-4 py-2 rounded-full font-semibold text-gray-700 hover:bg-blue-100 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-50">中島裕翔</button>
+      <button type="button" role="tab" aria-selected="false" aria-controls="member-chinen" aria-expanded="false" data-target="member-chinen" class="nav-button px-4 py-2 rounded-full font-semibold text-gray-700 hover:bg-blue-100 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-50">知念侑李</button>
+      <button type="button" role="tab" aria-selected="false" aria-controls="member-arioka" aria-expanded="false" data-target="member-arioka" class="nav-button px-4 py-2 rounded-full font-semibold text-gray-700 hover:bg-blue-100 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-50">有岡大貴</button>
+      <button type="button" role="tab" aria-selected="false" aria-controls="member-inoo" aria-expanded="false" data-target="member-inoo" class="nav-button px-4 py-2 rounded-full font-semibold text-gray-700 hover:bg-blue-100 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-50">伊野尾慧</button>
+      <button type="button" role="tab" aria-selected="false" aria-controls="member-takaki" aria-expanded="false" data-target="member-takaki" class="nav-button px-4 py-2 rounded-full font-semibold text-gray-700 hover:bg-blue-100 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-50">髙木雄也</button>
+      <button type="button" role="tab" aria-selected="false" aria-controls="member-yaotome" aria-expanded="false" data-target="member-yaotome" class="nav-button px-4 py-2 rounded-full font-semibold text-gray-700 hover:bg-blue-100 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-50">八乙女光</button>
+    </div>
+  </nav>
 
-<nav class="bg-white shadow-sm sticky top-[88px] z-40">
-<div class="container mx-auto flex justify-center items-center p-4 space-x-2 md:space-x-4 flex-wrap">
-<button data-target="member-yabu" class="nav-button active px-4 py-2 rounded-full font-semibold text-gray-700 hover:bg-blue-100 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-50" aria-current="page">薮宏太</button>
-<button data-target="member-yamada" class="nav-button px-4 py-2 rounded-full font-semibold text-gray-700 hover:bg-blue-100 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-50">山田涼介</button>
-<button data-target="member-nakajima" class="nav-button px-4 py-2 rounded-full font-semibold text-gray-700 hover:bg-blue-100 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-50">中島裕翔</button>
-<button data-target="member-chinen" class="nav-button px-4 py-2 rounded-full font-semibold text-gray-700 hover:bg-blue-100 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-50">知念侑李</button>
-<button data-target="member-arioka" class="nav-button px-4 py-2 rounded-full font-semibold text-gray-700 hover:bg-blue-100 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-50">有岡大貴</button>
-<button data-target="member-inoo" class="nav-button px-4 py-2 rounded-full font-semibold text-gray-700 hover:bg-blue-100 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-50">伊野尾慧</button>
-<button data-target="member-takaki" class="nav-button px-4 py-2 rounded-full font-semibold text-gray-700 hover:bg-blue-100 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-50">髙木雄也</button>
-<button data-target="member-yaotome" class="nav-button px-4 py-2 rounded-full font-semibold text-gray-700 hover:bg-blue-100 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-50">八乙女光</button>
-</div>
-</nav>
+  <main class="container mx-auto p-4 md:p-8">
+    <!-- 薮宏太 -->
+    <section id="member-yabu" class="content-section active" aria-labelledby="member-yabu-title" role="tabpanel">
+      <div class="text-center mb-8">
+        <h2 id="member-yabu-title" class="text-3xl md:text-4xl font-extrabold text-blue-800">【薮宏太と深く見つめる】大正政変期：歴史のうねり、解き放つ真実！</h2>
+        <p class="mt-2 text-lg text-gray-600">かつての権力と、新しい時代の声。その本質を君と解き明かそう。</p>
+      </div>
+      <div class="hsj-card p-6 rounded-lg mb-8 shadow">
+        <p class="text-lg leading-relaxed"><span class="font-bold text-blue-700">薮宏太：</span>「歴史の舞台が大きく動く時、まるで巨大なうねりのように、時代は変革を求めて動き出すんだ！これまでの古〜い政治のやり方（藩閥政治ってやつ！）と、国民みんなが求める新しい政治の形が、激しくぶつかり合ったのがこの時期なんだ。この複雑で、時にわかりにくい流れの奥底に隠された真実を、君と僕で深く、そして冷静に見つめていきたい。一緒に考えていけば、きっと面白い発見があるはず！さあ、この激動の時代の『本当の顔』を解き明かす、知的な旅に出発だ！」</p>
+      </div>
 
-<main class="container mx-auto p-4 md:p-8">
-<!-- 薮宏太 Section: 政治の変動と藩閥政治 -->
-<section id="member-yabu" class="content-section active" aria-labelledby="member-yabu-title">
-<div class="text-center mb-8">
-<h2 id="member-yabu-title" class="text-3xl md:text-4xl font-extrabold text-blue-800">【薮宏太と深く見つめる】大正政変期：歴史のうねり、解き放つ真実！</h2>
-<p class="mt-2 text-lg text-gray-600">かつての権力と、新しい時代の声。その本質を君と解き明かそう。</p>
-</div>
-<div class="hsj-card p-6 rounded-lg mb-8 shadow">
-<p class="text-lg leading-relaxed"><span class="font-bold text-blue-700">薮宏太：</span>「歴史の舞台が大きく動く時、まるで巨大なうねりのように、時代は変革を求めて動き出すんだ！これまでの古〜い政治のやり方（藩閥政治ってやつ！）と、国民みんなが求める新しい政治の形が、激しくぶつかり合ったのがこの時期なんだ。この複雑で、時にわかりにくい流れの奥底に隠された真実を、君と僕で深く、そして冷静に見つめていきたい。一緒に考えていけば、きっと面白い発見があるはず！さあ、この激動の時代の『本当の顔』を解き明かす、知的な旅に出発だ！」</p>
-</div>
+      <div class="timeline p-4">
+        <h3 class="text-2xl font-bold text-gray-800 mb-4">政治の動きをチェック！</h3>
 
-<div class="timeline p-4">
-<h3 class="text-2xl font-bold text-gray-800 mb-4">政治の動きをチェック！</h3>
-<div class="timeline-item mb-8 ml-8" data-title="桂園時代" data-details="昔の政治家、桂太郎さんと西園寺公望さんが交代で日本のリーダー（総理大臣）をしていた時代だよ。これは、まだ一部の偉い人たち（元老っていうんだ）の意見がとっても強くて、国民みんなの声が政治に届きにくかったんだね。ちょっと古風な政治だったってこと！">
-<div class="timeline-dot"></div>
-<h4 class="text-xl font-bold text-gray-800">桂園時代</h4>
-<p class="text-gray-600">桂太郎と西園寺公望が交互に政権を担当。元老による政治が続く。</p>
-</div>
-<div class="timeline-item mb-8 ml-8" data-title="第一次護憲運動 (大正政変)" data-details="「おい！偉い人たちだけで政治を決めるのはおかしいぞ！国民の声を聞け！」って、たくさんの人が立ち上がった大事件！「閥族打破・憲政擁護（ばつぞくだは・けんせいようご）」っていう超かっこいいスローガンを掲げて、デモや集会をバンバンやったんだ。その結果、リーダーだった桂さんの内閣は、なんとたった53日で辞めさせられちゃったんだよ！国民のパワーが政治を動かした、マジで熱い出来事だったんだ！">
-<div class="timeline-dot"></div>
-<h4 class="text-xl font-bold text-gray-800">第一次護憲運動 (大正政変)</h4>
-<p class="text-gray-600">「閥族打破・憲政擁護」を掲げ、国民が運動。桂内閣はわずか53日で退陣！</p>
-</div>
-<div class="timeline-item ml-8" data-title="シーメンス事件" data-details="海軍の偉い人が、ドイツのシーメンスっていう会社からコッソリお金をもらってた（賄賂）のがバレちゃった、とんでもない汚職事件！これを知って、国民は「なんだよ、政治家も軍人も信用できないな！」って、さらに不満が大爆発！このせいで、当時のリーダーだった山本権兵衛さんの内閣も辞めちゃったんだ。政治がもっとクリーンになってほしいっていう、みんなの気持ちが強くなったんだね！">
-<div class="timeline-dot"></div>
-<h4 class="text-xl font-bold text-gray-800">シーメンス事件</h4>
-<p class="text-gray-600">海軍の汚職事件で山本権兵衛内閣が退陣。政治への不信感が高まる。</p>
-</div>
-</div>
-</section>
+        <div class="timeline-item mb-8 ml-8" data-title="桂園時代" data-details="昔の政治家、桂太郎さんと西園寺公望さんが交代で日本のリーダー（総理大臣）をしていた時代だよ。これは、まだ一部の偉い人たち（元老っていうんだ）の意見がとっても強くて、国民みんなの声が政治に届きにくかったんだね。ちょっと古風な政治だったってこと！">
+          <div class="timeline-dot"></div>
+          <h4 class="text-xl font-bold text-gray-800">桂園時代</h4>
+          <p class="text-gray-600">桂太郎と西園寺公望が交互に政権を担当。元老による政治が続く。</p>
+        </div>
 
-<!-- 山田涼介 Section: 平民宰相と政党政治の夜明け -->
-<section id="member-yamada" class="content-section" aria-hidden="true" aria-labelledby="member-yamada-title">
-<div class="text-center mb-8">
-<h2 id="member-yamada-title" class="text-3xl md:text-4xl font-extrabold text-red-800">【山田涼介と描く】政党政治の夜明け：民の夢、輝き始める！</h2>
-<p class="mt-2 text-lg text-gray-600">一人の男の情熱が、時代を動かす。その輝きを君に伝えたい。</p>
-</div>
-<div class="hsj-card p-6 rounded-lg mb-8 shadow">
-<p class="text-lg leading-relaxed"><span class="font-bold text-blue-700">山田涼介：</span>「歴史っていう壮大な舞台には、時々、彗星のように現れて、時代そのものを変えちゃうようなヒーローがいるんだ！今回紹介するのは、まさにそんなカリスマ的な存在、『平民宰相』と呼ばれた原敬（はらたかし）さん！彼の燃えるような情熱が、これまでの古い政治の形を打ち破り、国民みんなの願いが政治に届く、新しい時代の扉を開いたんだ。そのドラマティックな輝きと、彼が日本に託した未来への熱い夢を、僕は君に、この心の底から伝えたい。さあ、希望に満ちた夜明けの物語を、僕と一緒に、最高のテンションで感じよう！」</p>
-</div>
+        <div class="timeline-item mb-8 ml-8" data-title="第一次護憲運動 (大正政変)" data-details="「おい！偉い人たちだけで政治を決めるのはおかしいぞ！国民の声を聞け！」って、たくさんの人が立ち上がった大事件！「閥族打破・憲政擁護（ばつぞくだは・けんせいようご）」っていう超かっこいいスローガンを掲げて、デモや集会をバンバンやったんだ。その結果、リーダーだった桂さんの内閣は、なんとたった53日で辞めさせられちゃったんだよ！国民のパワーが政治を動かした、マジで熱い出来事だったんだ！">
+          <div class="timeline-dot"></div>
+          <h4 class="text-xl font-bold text-gray-800">第一次護憲運動 (大正政変)</h4>
+          <p class="text-gray-600">「閥族打破・憲政擁護」を掲げ、国民が運動。桂内閣はわずか53日で退陣！</p>
+        </div>
 
-<div class="card p-6">
-<h3 class="text-xl font-bold mb-4">原敬「平民宰相」の登場✨</h3>
-<p class="mb-2">第一次世界大戦後の社会情勢が不安定な中、国民の政治への不満が高まっていたんだ。</p>
-<ul class="list-disc list-inside space-y-2">
-<li><span class="font-bold">初の本格的政党内閣：</span>立憲政友会（りっけんせいゆうかい）っていう政党のリーダーだった原敬さんが、ついに総理大臣になったんだ！これまでの総理大臣は、特別な家柄の人や軍人ばっかりだったんだけど、原さんは普通の国会議員から選ばれた、初めての『本格的な』政党内閣のリーダー！これは本当にすごいことだったんだよ！</li>
-<li><span class="font-bold">国民の期待：</span>原さんは、貴族じゃなくて『平民』出身だったから、国民みんなから「僕たちの気持ちを分かってくれる！」って、すごく期待されたんだ。『平民宰相（へいみんさいしょう）』って呼ばれて、まさに国民的ヒーローだったんだね！</li>
-<li><span class="font-bold">積極財政：</span>鉄道をたくさん作ったり、学校を増やしたり、いろんなことにどんどんお金を使ったんだ（これを積極財政っていうよ）。特に地方の発展に力を入れたから、国民の生活がどんどん便利になったんだよ！まさに『有言実行』って感じだね！</li>
-</ul>
-</div>
-</section>
+        <div class="timeline-item ml-8" data-title="シーメンス事件" data-details="海軍の偉い人が、ドイツのシーメンスっていう会社からコッソリお金をもらってた（賄賂）のがバレちゃった、とんでもない汚職事件！これを知って、国民は「なんだよ、政治家も軍人も信用できないな！」って、さらに不満が大爆発！このせいで、当時のリーダーだった山本権兵衛さんの内閣も辞めちゃったんだ。政治がもっとクリーンになってほしいっていう、みんなの気持ちが強くなったんだね！">
+          <div class="timeline-dot"></div>
+          <h4 class="text-xl font-bold text-gray-800">シーメンス事件</h4>
+          <p class="text-gray-600">海軍の汚職事件で山本権兵衛内閣が退陣。政治への不信感が高まる。</p>
+        </div>
+      </div>
+    </section>
 
-<!-- 中島裕翔 Section: 恐慌と社会の変化 -->
-<section id="member-nakajima" class="content-section" aria-hidden="true" aria-labelledby="member-nakajima-title">
-<div class="text-center mb-8">
-<h2 id="member-nakajima-title" class="text-3xl md:text-4xl font-extrabold text-purple-800">【中島裕翔と辿る】恐慌の波と光と影の法：真実を見つめる覚悟！</h2>
-<p class="mt-2 text-lg text-gray-600">繁栄の裏で生まれたひずみ。時代の明と暗を君と共に。</p>
-</div>
-<div class="hsj-card p-6 rounded-lg mb-8 shadow">
-<p class="text-lg leading-relaxed"><span class="font-bold text-blue-700">中島裕翔：</span>「光が強ければ、影もまた、深く、そして濃くなるもの。華やかでウハウハだった大戦景気の裏側で、日本経済は突然、とんでもない破滅の淵に立たされてしまったんだ。そして、この混乱の中で、国民みんなの自由や未来を大きく左右する、まるでコインの裏表みたいな、対照的な二つの法律が生まれてしまった。繁栄の裏で生まれた、心のひずみ。そして、未来を懸けた、時に残酷な決断。この時代の『明』と『暗』、そのすべてを、君と共に深く、静かに、そして覚悟を持って感じていきたい。目を逸らさずに、真実を見つめよう。」</p>
-</div>
+    <!-- 山田涼介 -->
+    <section id="member-yamada" class="content-section" aria-hidden="true" aria-labelledby="member-yamada-title" role="tabpanel">
+      <div class="text-center mb-8">
+        <h2 id="member-yamada-title" class="text-3xl md:text-4xl font-extrabold text-red-800">【山田涼介と描く】政党政治の夜明け：民の夢、輝き始める！</h2>
+        <p class="mt-2 text-lg text-gray-600">一人の男の情熱が、時代を動かす。その輝きを君に伝えたい。</p>
+      </div>
+      <div class="hsj-card p-6 rounded-lg mb-8 shadow">
+        <p class="text-lg leading-relaxed"><span class="font-bold text-blue-700">山田涼介：</span>「歴史っていう壮大な舞台には、時々、彗星のように現れて、時代そのものを変えちゃうようなヒーローがいるんだ！今回紹介するのは、まさにそんなカリスマ的な存在、『平民宰相』と呼ばれた原敬（はらたかし）さん！彼の燃えるような情熱が、これまでの古い政治の形を打ち破り、国民みんなの願いが政治に届く、新しい時代の扉を開いたんだ。そのドラマティックな輝きと、彼が日本に託した未来への熱い夢を、僕は君に、この心の底から伝えたい。さあ、希望に満ちた夜明けの物語を、僕と一緒に、最高のテンションで感じよう！」</p>
+      </div>
 
-<div class="grid md:grid-cols-2 gap-8">
-<div class="card p-6">
-<h3 class="text-xl font-bold mb-4">経済：度重なる恐慌の波</h3>
-<ul class="list-disc list-inside space-y-2">
-<li><span class="font-bold">戦後恐慌：</span>第一次世界大戦で「日本すげー！」って盛り上がってた好景気は、戦争が終わったら、まるで夢だったかのようにあっという間に消えちゃったんだ。日本経済は一気に大不景気に突入！</li>
-<li><span class="font-bold">関東大震災：</span>1923年に起こった関東大震災は、東京や横浜を壊滅させちゃった、マジでヤバい大災害。これのせいで、経済はさらに大打撃を受けて、復興にもとんでもないお金がかかっちゃったんだ。</li>
-<li><span class="font-bold">金融恐慌：</span>震災の時に発行されたお金（震災手形）の処理がうまくいかなくて、たくさんの銀行が「もうダメだ〜！」って次々に潰れちゃったんだ！経済全体がパニックになっちゃった、超ピンチな出来事だよ。</li>
-<li><span class="font-bold">昭和恐慌：</span>世界中で起こった大不況（世界恐慌）と、日本が金本位制に戻した（金解禁）のが重なっちゃって、特に農村がマジで深刻な大不況に苦しんだんだ。食べ物もろくに買えない人が増えちゃって、貧乏が社会全体の大問題になったんだ。本当に大変な時代だったんだね…。</li>
-</ul>
-</div>
-<div class="card p-6">
-<h3 class="text-xl font-bold mb-4">政治と社会：アメとムチの時代</h3>
-<p class="mb-2">加藤高明（かとうたかあき）さんの内閣の時に、国民の自由を広げる法律と、それを厳しく制限する法律っていう、まるで真逆な２つの法律ができたんだ。</p>
-<ul class="list-disc list-inside space-y-2">
-<li><span class="font-bold text-green-600">普通選挙法（希望のアメ）：</span>これはマジで嬉しいニュース！これまでは、お金持ちじゃないと選挙に参加できなかったんだけど、この法律ができたおかげで、満25歳以上の『全ての男子』に選挙で投票する権利が与えられたんだ！つまり、もっとたくさんの国民が政治に参加できるようになった、超画期的な法律だよ！まさに希望の光だね！</li>
-<li><span class="font-bold text-red-600">治安維持法（自由を縛るムチ）：</span>一方で、社会主義とか共産主義みたいな、政府のやり方に反対する動きを厳しく取り締まるために作られた、ちょっぴり怖い法律なんだ。これによって、国民が自由に意見を言ったり、考えたりする自由が大きく制限されちゃったんだ。自由って本当に大切だよね。</li>
-</ul>
-</div>
-</div>
-</section>
+      <div class="card p-6">
+        <h3 class="text-xl font-bold mb-4">原敬「平民宰相」の登場✨</h3>
+        <p class="mb-2">第一次世界大戦後の社会情勢が不安定な中、国民の政治への不満が高まっていたんだ。</p>
+        <ul class="list-disc list-inside space-y-2">
+          <li><span class="font-bold">初の本格的政党内閣：</span>立憲政友会（りっけんせいゆうかい）っていう政党のリーダーだった原敬さんが、ついに総理大臣になったんだ！これまでの総理大臣は、特別な家柄の人や軍人ばっかりだったんだけど、原さんは普通の国会議員から選ばれた、初めての『本格的な』政党内閣のリーダー！これは本当にすごいことだったんだよ！</li>
+          <li><span class="font-bold">国民の期待：</span>原さんは、貴族じゃなくて『平民』出身だったから、国民みんなから「僕たちの気持ちを分かってくれる！」って、すごく期待されたんだ。『平民宰相（へいみんさいしょう）』って呼ばれて、まさに国民的ヒーローだったんだね！</li>
+          <li><span class="font-bold">積極財政：</span>鉄道をたくさん作ったり、学校を増やしたり、いろんなことにどんどんお金を使ったんだ（これを積極財政っていうよ）。特に地方の発展に力を入れたから、国民の生活がどんどん便利になったんだよ！まさに『有言実行』って感じだね！</li>
+        </ul>
+      </div>
+    </section>
 
-<!-- 知念侑李 Section: 人々の声と社会運動（農民運動） -->
-<section id="member-chinen" class="content-section" aria-hidden="true" aria-labelledby="member-chinen-title">
-<div class="text-center mb-8">
-<h2 id="member-chinen-title" class="text-3xl md:text-4xl font-extrabold text-pink-800">【知念侑李と分かち合う】声を上げた農民たちの純粋な勇気：希望の絆！</h2>
-<p class="mt-2 text-lg text-gray-600">困難な時代だからこそ。彼らの願いと、未来への一歩を共に。</p>
-</div>
-<div class="hsj-card p-6 rounded-lg mb-8 shadow">
-<p class="text-lg leading-relaxed"><span class="font-bold text-blue-700">知念侑李：</span>「どんなに厳しい時代でも、人は決して希望を捨てない。特にこの頃の農村は、恐慌のせいでみんなの生活が本当に大変だったんだ。でも、そんな中でも『なんとかしたい！このままじゃいけない！』って、多くの人たちが勇気を出して立ち上がり、声を上げたんだよ。彼らの純粋な願い、そして未来へと繋がる小さな、でも確かな一歩。その尊い勇気と、みんなで力を合わせる『希望の絆』を、僕と君で、心から分かち合いたいな。小さな声が、やがて大きな波になる瞬間を、一緒に感じてみようね！」</p>
-</div>
+    <!-- 中島裕翔 -->
+    <section id="member-nakajima" class="content-section" aria-hidden="true" aria-labelledby="member-nakajima-title" role="tabpanel">
+      <div class="text-center mb-8">
+        <h2 id="member-nakajima-title" class="text-3xl md:text-4xl font-extrabold text-purple-800">【中島裕翔と辿る】恐慌の波と光と影の法：真実を見つめる覚悟！</h2>
+        <p class="mt-2 text-lg text-gray-600">繁栄の裏で生まれたひずみ。時代の明と暗を君と共に。</p>
+      </div>
+      <div class="hsj-card p-6 rounded-lg mb-8 shadow">
+        <p class="text-lg leading-relaxed"><span class="font-bold text-blue-700">中島裕翔：</span>「光が強ければ、影もまた、深く、そして濃くなるもの。華やかでウハウハだった大戦景気の裏側で、日本経済は突然、とんでもない破滅の淵に立たされてしまったんだ。そして、この混乱の中で、国民みんなの自由や未来を大きく左右する、まるでコインの裏表みたいな、対照的な二つの法律が生まれてしまった。繁栄の裏で生まれた、心のひずみ。そして、未来を懸けた、時に残酷な決断。この時代の『明』と『暗』、そのすべてを、君と共に深く、静かに、そして覚悟を持って感じていきたい。目を逸らさずに、真実を見つめよう。」</p>
+      </div>
 
-<div class="card p-6 mt-8">
-<h3 class="text-2xl font-bold text-center mb-4">農民運動の活発化🌾</h3>
-<p class="text-center text-gray-600 mb-6">恐慌の影響を最も強く受けた農村で、小作争議が頻発！</p>
-<div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-center">
-<div class="social-movement-card p-4 rounded-lg cursor-pointer hover:bg-blue-50 transition-colors"
-data-title="農民運動"
-data-details="地主さんと小作人さん（土地を借りて農業をする人）の間で、「土地の借り賃（小作料）が高すぎる！もっと安くしてくれ！」とか、「この土地、ずっと借りていたいのに！」っていう不満が大爆発！『小作争議』っていう、話し合いやデモが頻繁に起こったんだ。みんな、自分たちの生活を守るために必死だったんだね。">
-<div class="text-4xl text-green-700">🌾</div> <!-- アイコンの色を緑に -->
-<h4 class="font-bold mt-2">小作争議</h4>
-<p class="text-sm">地主 vs 小作農</p>
-</div>
-<div class="social-movement-card p-4 rounded-lg cursor-pointer hover:bg-blue-50 transition-colors"
-data-title="日本農民組合の結成"
-data-details="「一人じゃダメでも、みんなで力を合わせれば変わる！」ってことで、農民さんたちが自分たちの権利を守るために、1922年に『日本農民組合』っていう大きな団体を作ったんだ！彼らは小作争議の相談に乗ったり、政府に「こうしてほしい！」って意見を言ったりして、農民の地位をもっと良くしようと頑張ったんだよ。これは、みんなが協力して社会を変えようとした、本当にすごい一歩だったんだ！">
-<div class="text-4xl text-blue-700">🤝</div> <!-- アイコンの色を青に -->
-<h4 class="font-bold mt-2">日本農民組合</h4>
-<p class="text-sm">農民が団結！</p>
-</div>
-</div>
-</div>
-</section>
+      <div class="grid md:grid-cols-2 gap-8">
+        <div class="card p-6">
+          <h3 class="text-xl font-bold mb-4">経済：度重なる恐慌の波</h3>
+          <ul class="list-disc list-inside space-y-2">
+            <li><span class="font-bold">戦後恐慌：</span>第一次世界大戦で「日本すげー！」って盛り上がってた好景気は、戦争が終わったら、まるで夢だったかのようにあっという間に消えちゃったんだ。日本経済は一気に大不景気に突入！</li>
+            <li><span class="font-bold">関東大震災：</span>1923年に起こった関東大震災は、東京や横浜を壊滅させちゃった、マジでヤバい大災害。これのせいで、経済はさらに大打撃を受けて、復興にもとんでもないお金がかかっちゃったんだ。</li>
+            <li><span class="font-bold">金融恐慌：</span>震災の時に発行されたお金（震災手形）の処理がうまくいかなくて、たくさんの銀行が「もうダメだ〜！」って次々に潰れちゃったんだ！経済全体がパニックになっちゃった、超ピンチな出来事だよ。</li>
+            <li><span class="font-bold">昭和恐慌：</span>世界中で起こった大不況（世界恐慌）と、日本が金本位制に戻した（金解禁）のが重なっちゃって、特に農村がマジで深刻な大不況に苦しんだんだ。食べ物もろくに買えない人が増えちゃって、貧乏が社会全体の大問題になったんだ。本当に大変な時代だったんだね…。</li>
+          </ul>
+        </div>
+        <div class="card p-6">
+          <h3 class="text-xl font-bold mb-4">政治と社会：アメとムチの時代</h3>
+          <p class="mb-2">加藤高明（かとうたかあき）さんの内閣の時に、国民の自由を広げる法律と、それを厳しく制限する法律っていう、まるで真逆な２つの法律ができたんだ。</p>
+          <ul class="list-disc list-inside space-y-2">
+            <li><span class="font-bold text-green-600">普通選挙法（希望のアメ）：</span>これはマジで嬉しいニュース！これまでは、お金持ちじゃないと選挙に参加できなかったんだけど、この法律ができたおかげで、満25歳以上の『全ての男子』に選挙で投票する権利が与えられたんだ！つまり、もっとたくさんの国民が政治に参加できるようになった、超画期的な法律だよ！まさに希望の光だね！</li>
+            <li><span class="font-bold text-red-600">治安維持法（自由を縛るムチ）：</span>一方で、社会主義とか共産主義みたいな、政府のやり方に反対する動きを厳しく取り締まるために作られた、ちょっぴり怖い法律なんだ。これによって、国民が自由に意見を言ったり、考えたりする自由が大きく制限されちゃったんだ。自由って本当に大切だよね。</li>
+          </ul>
+        </div>
+      </div>
+    </section>
 
-<!-- 有岡大貴 Section: 大戦景気と経済の光と影 -->
-<section id="member-arioka" class="content-section" aria-hidden="true" aria-labelledby="member-arioka-title">
-<div class="text-center mb-8">
-<h2 id="member-arioka-title" class="text-3xl md:text-4xl font-extrabold text-orange-800">【有岡大貴と解き明かす】大戦景気の真実：光と影の物語、スクープだよ！</h2>
-<p class="mt-2 text-lg text-gray-600">煌びやかな繁栄の裏で何が？情熱的に、君と探検するよ！</p>
-</div>
-<div class="hsj-card p-6 rounded-lg mb-8 shadow">
-<p class="text-lg leading-relaxed"><span class="font-bold text-blue-700">有岡大貴：</span>「みんなー！準備はいい！？世界を舞台に、日本がまさかの大躍進を遂げた、超スリリングな時代にタイムスリップするよ！第一次世界大戦っていう大事件の真っ只中で、日本の経済はもう、フィーバーどころか超絶バブル状態！輸出がガンガン伸びて、『船成金（ふななりきん）』なんていう、ウハウハなお金持ちまで登場したんだ！でもね、こんなにキラキラした繁栄の裏側には、実は影の部分も隠されてたんだよ…。一体何が起こっていたのか？その真実を、僕が情熱的に、そしてみんなを巻き込みながら、とことん解き明かしていくよ！さあ、歴史のミステリーを一緒に探検しようぜ！レッツゴー！」</p>
-</div>
+    <!-- 知念侑李 -->
+    <section id="member-chinen" class="content-section" aria-hidden="true" aria-labelledby="member-chinen-title" role="tabpanel">
+      <div class="text-center mb-8">
+        <h2 id="member-chinen-title" class="text-3xl md:text-4xl font-extrabold text-pink-800">【知念侑李と分かち合う】声を上げた農民たちの純粋な勇気：希望の絆！</h2>
+        <p class="mt-2 text-lg text-gray-600">困難な時代だからこそ。彼らの願いと、未来への一歩を共に。</p>
+      </div>
+      <div class="hsj-card p-6 rounded-lg mb-8 shadow">
+        <p class="text-lg leading-relaxed"><span class="font-bold text-blue-700">知念侑李：</span>「どんなに厳しい時代でも、人は決して希望を捨てない。特にこの頃の農村は、恐慌のせいでみんなの生活が本当に大変だったんだ。でも、そんな中でも『なんとかしたい！このままじゃいけない！』って、多くの人たちが勇気を出して立ち上がり、声を上げたんだよ。彼らの純粋な願い、そして未来へと繋がる小さな、でも確かな一歩。その尊い勇気と、みんなで力を合わせる『希望の絆』を、僕と君で、心から分かち合いたいな。小さな声が、やがて大きな波になる瞬間を、一緒に感じてみようね！」</p>
+      </div>
 
-<div class="grid md:grid-cols-2 gap-8">
-<div class="card p-6">
-<h3 class="text-xl font-bold mb-4">経済：大戦景気で絶好調！</h3>
-<p class="mb-2">ヨーロッパの国々が戦争で生産できない分、日本の製品が世界中で大ヒット！</p>
-<ul class="list-disc list-inside space-y-2">
-<li><span class="font-bold">輸出が急増：</span>第一次世界大戦でヨーロッパの国々が戦争でバタバタしてる間、彼らが作れないモノを日本がガンガン作って世界中に輸出したんだ！特に、船を作る会社（造船業）や、布を作る会社（紡績業）がもう大儲け！日本は、外国にお金を借りてた国（債務国）から、逆に外国にお金を貸せる国（債権国）に大逆転しちゃったんだよ！マジですごい！</li>
-<li><span class="font-bold">「船成金」の登場：</span>海運業っていう船でモノを運ぶ仕事で、信じられないくらい大金持ちになった人たちがたくさん現れたんだ。彼らは『船成金』って呼ばれて、めちゃくちゃ豪華な生活を送ってたんだって！今のセレブとは比べ物にならないくらい、桁違いの裕福さだったらしいよ！夢が広がるね！</li>
-</ul>
-<div class="chart-container mt-4">
-<h4 class="text-lg font-semibold text-gray-700 mb-2">日本の貿易額の変動（相対値）</h4>
-<canvas id="economyChart2"></canvas>
-</div>
-</div>
-<div class="card p-6">
-<h3 class="text-xl font-bold mb-4">外交と社会：光と影の出来事</h3>
-<ul class="list-disc list-inside space-y-2">
-<li><span class="font-bold">二十一か条の要求：</span>日本は、中国に対して「これとこれとこれを、日本の言う通りにしてくれ！」っていう、かなり強引なお願い（要求）を突きつけたんだ。これに対して、ヨーロッパやアメリカの国々から「日本、ちょっとやりすぎじゃない！？」って、めっちゃ非難されちゃったんだよ。外交って、本当に難しいバランス感覚が大事だね。</li>
-<li><span class="font-bold">シベリア出兵：</span>ロシアっていう国で革命が起きた時、日本は軍隊を送って介入しようとしたんだ（シベリア出兵）。でも、このせいで国内でお米が買い占められて、値段がグンと上がっちゃったんだ！「お米が高くて買えない！」って、全国各地で怒った人たちが暴動を起こしたんだよ、それが『米騒動（こめそうどう）』！経済は良くても、国民みんなの生活は苦しかったんだね…。光と影がはっきりした時代だったんだ。</li>
-</ul>
-</div>
-</div>
-</section>
+      <div class="card p-6 mt-8">
+        <h3 class="text-2xl font-bold text-center mb-4">農民運動の活発化🌾</h3>
+        <p class="text-center text-gray-600 mb-6">恐慌の影響を最も強く受けた農村で、小作争議が頻発！</p>
 
-<!-- 伊野尾慧 Section: 社会運動（労働運動）と文化 -->
-<section id="member-inoo" class="content-section" aria-hidden="true" aria-labelledby="member-inoo-title">
-<div class="text-center mb-8">
-<h2 id="member-inoo-title" class="text-3xl md:text-4xl font-extrabold text-teal-800">【伊野尾慧と紐解く】労働者の声とデモクラシーの真髄：僕らの未来へ繋げよう！</h2>
-<p class="mt-2 text-lg text-gray-600">知的な視点で、自由を求めるエネルギーの背景を探ろう。</p>
-</div>
-<div class="hsj-card p-6 rounded-lg mb-8 shadow">
-<p class="text-lg leading-relaxed"><span class="font-bold text-blue-700">伊野尾慧：</span>「知識を深めることは、時に時代を大きく動かす力になるんだ。大正から昭和初期にかけて、日本社会はものすごいスピードで変化していった。そんな変革期には、いつだって人々の熱い声が響き渡るものだよね。特にこの時代、工場で働く労働者たちは、ひどい労働環境や、給料が安すぎるっていう不当な扱いに苦しんでいたんだ。でも彼らは黙ってなんかいなかった。勇気を出して立ち上がり、自分たちの権利を求めて声を上げたんだ。彼らの叫び、そして『大正デモクラシー』っていう、自由と民主主義を求める思想の真髄。その複雑に絡み合った歴史の糸を、僕と君で、丁寧に、そして知的に紐解いていこうじゃないか。きっと、僕らの未来に繋がる、新しい発見が君を待っているはずだよ。さあ、一緒に考えてみよう。」</p>
-</div>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-center">
+          <div class="social-movement-card p-4 rounded-lg cursor-pointer hover:bg-blue-50 transition-colors"
+               data-title="農民運動"
+               data-details="地主さんと小作人さん（土地を借りて農業をする人）の間で、「土地の借り賃（小作料）が高すぎる！もっと安くしてくれ！」とか、「この土地、ずっと借りていたいのに！」っていう不満が大爆発！『小作争議』っていう、話し合いやデモが頻繁に起こったんだ。みんな、自分たちの生活を守るために必死だったんだね。">
+            <div class="text-4xl text-green-700">🌾</div>
+            <h4 class="font-bold mt-2">小作争議</h4>
+            <p class="text-sm">地主 vs 小作農</p>
+          </div>
 
-<div class="card p-6 mt-8">
-<h3 class="text-2xl font-bold text-center mb-4">活発化する労働運動✊</h3>
-<p class="text-center text-gray-600 mb-6">産業の発展とともに、労働者の不満も高まっていったんだ。</p>
-<div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-center">
-<div class="social-movement-card p-4 rounded-lg cursor-pointer hover:bg-blue-50 transition-colors"
-data-title="労働運動の広がり"
-data-details="工場や会社がどんどん大きくなる一方で、働く人たちの給料は全然上がらないし、毎日めちゃくちゃ長い時間働かされるっていう、本当にひどい状況だったんだ。だから、『こんなのおかしい！』って、働く人たちが怒って、仕事をしない（ストライキ）とか、みんなで会社に文句を言う（労働争議）ことが、たくさん起こるようになったんだよ。労働組合っていう、働く人たちの味方のグループもどんどん増えて、みんなで力を合わせて権利を訴える動きが、すごく活発になったんだ！">
-<div class="text-4xl text-red-700">💪</div> <!-- アイコンの色を赤に -->
-<h4 class="font-bold mt-2">労働争議</h4>
-<p class="text-sm">ストライキの増加</p>
-</div>
-<div class="social-movement-card p-4 rounded-lg cursor-pointer hover:bg-blue-50 transition-colors"
-data-title="友愛会の設立"
-data-details="鈴木文治（すずきぶんじ）さんっていう人が作った『友愛会（ゆうあいかい）』は、日本の労働運動を最初にリードした、とっても大事なグループなんだ。最初は会社と働く人が仲良くするための活動が中心だったんだけど、だんだんと「働く人たちの権利をもっとしっかり守ろう！」っていう活動に変わっていって、今の労働組合の考え方の元になったんだよ。働く人たちの未来を切り開いた、すごい組織なんだ！">
-<div class="text-4xl text-blue-700">🤝</div> <!-- アイコンの色を青に -->
-<h4 class="font-bold mt-2">友愛会</h4>
-<p class="text-sm">鈴木文治</p>
-</div>
-</div>
-</div>
-<!-- 大正デモクラシーや文化については、もしスペースがあれば追記 -->
-</section>
+          <div class="social-movement-card p-4 rounded-lg cursor-pointer hover:bg-blue-50 transition-colors"
+               data-title="日本農民組合の結成"
+               data-details="「一人じゃダメでも、みんなで力を合わせれば変わる！」ってことで、農民さんたちが自分たちの権利を守るために、1922年に『日本農民組合』っていう大きな団体を作ったんだ！彼らは小作争議の相談に乗ったり、政府に「こうしてほしい！」って意見を言ったりして、農民の地位をもっと良くしようと頑張ったんだよ。これは、みんなが協力して社会を変えようとした、本当にすごい一歩だったんだ！">
+            <div class="text-4xl text-blue-700">🤝</div>
+            <h4 class="font-bold mt-2">日本農民組合</h4>
+            <p class="text-sm">農民が団結！</p>
+          </div>
+        </div>
+      </div>
+    </section>
 
-<!-- 髙木雄也 Section: 女性の進出と新しい生活 -->
-<section id="member-takaki" class="content-section" aria-hidden="true" aria-labelledby="member-takaki-title">
-<div class="text-center mb-8">
-<h2 id="member-takaki-title" class="text-3xl md:text-4xl font-extrabold text-indigo-800">【髙木雄也と魅せる】新しい女性の時代：煌めく自由と新たな輝き！</h2>
-<p class="mt-2 text-lg text-gray-600">女性たちが輝き、文化が花開く。その魅力に触れてみないか？</p>
-</div>
-<div class="hsj-card p-6 rounded-lg mb-8 shadow">
-<p class="text-lg leading-relaxed"><span class="font-bold text-blue-700">髙木雄也：</span>「おい、そこの君！自由を求める強い魂が、まるで嵐のように、新しい時代を切り拓いていく瞬間を、僕と一緒に体験してみないか？大正から昭和初期にかけて、日本の女性たちはマジでかっこよかったんだ。社会に出てバリバリ働いたり、自分の意見をハッキリ主張したり…。彼女たちの社会進出は目覚ましく、その最先端のファッションやクールなライフスタイルは、当時の都市文化を最高に彩ったんだぜ。女性たちがキラキラと輝き、新しい文化がドンドン花開いた、あの煌めく瞬間。そのドラマを、君と僕で、全身で感じてみないか？きっと、君の心にも、新しい発見と自由への情熱が生まれるはずだ！」</p>
-</div>
+    <!-- 有岡大貴 -->
+    <section id="member-arioka" class="content-section" aria-hidden="true" aria-labelledby="member-arioka-title" role="tabpanel">
+      <div class="text-center mb-8">
+        <h2 id="member-arioka-title" class="text-3xl md:text-4xl font-extrabold text-orange-800">【有岡大貴と解き明かす】大戦景気の真実：光と影の物語、スクープだよ！</h2>
+        <p class="mt-2 text-lg text-gray-600">煌びやかな繁栄の裏で何が？情熱的に、君と探検するよ！</p>
+      </div>
+      <div class="hsj-card p-6 rounded-lg mb-8 shadow">
+        <p class="text-lg leading-relaxed"><span class="font-bold text-blue-700">有岡大貴：</span>「みんなー！準備はいい！？世界を舞台に、日本がまさかの大躍進を遂げた、超スリリングな時代にタイムスリップするよ！第一次世界大戦っていう大事件の真っ只中で、日本の経済はもう、フィーバーどころか超絶バブル状態！輸出がガンガン伸びて、『船成金（ふななりきん）』なんていう、ウハウハなお金持ちまで登場したんだ！でもね、こんなにキラキラした繁栄の裏側には、実は影の部分も隠されてたんだよ…。一体何が起こっていたのか？その真実を、僕が情熱的に、そしてみんなを巻き込みながら、とことん解き明かしていくよ！さあ、歴史のミステリーを一緒に探検しようぜ！レッツゴー！」</p>
+      </div>
 
-<div class="card p-6 mt-8">
-<h3 class="text-2xl font-bold text-center mb-4">女性解放運動と新しい文化🙋‍♀️</h3>
-<p class="text-center text-gray-600 mb-6">女性たちが社会の主役になり始めた時代！</p>
-<div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-center">
-<div class="social-movement-card p-4 rounded-lg cursor-pointer hover:bg-blue-50 transition-colors"
-data-title="女性解放運動"
-data-details="「男も女も平等なはずだ！」って、女性たちが立ち上がった、まさに革命的な動き！女性の政治への参加（選挙権ちょうだい！）、自由に仕事を選びたい！って、いろんなことを強く訴えたんだ。市川房枝（いちかわふさえ）さんや平塚らいてう（ひらつからいちょう）さんっていう、超パワフルな女性たちが中心になって、女性の地位を良くするためにめちゃくちゃ頑張ったんだよ。『新しい女』っていう言葉も生まれて、女性たちの意識が大きく変わった、本当にエネルギッシュな時代だったんだ！">
-<div class="text-4xl text-purple-700">👠</div> <!-- アイコンの色を紫に -->
-<h4 class="font-bold mt-2">女性解放運動</h4>
-<p class="text-sm">市川房枝、平塚らいてう</p>
-</div>
-<div class="social-movement-card p-4 rounded-lg cursor-pointer hover:bg-blue-50 transition-colors"
-data-title="モガ・モボの登場"
-data-details="大正時代の終わりから昭和の初めにかけて、海外の文化がドンドン日本に入ってきて、超おしゃれで新しいライフスタイルを楽しむ若者たちが登場したんだ！それが『モダンガール（モガ）』と『モダンボーイ（モボ）』！モガは洋服を着てカフェでおしゃべりしたり、モボは最新のファッションで街をカッコよく歩いたり…。当時の都会の流行を象徴する、マジでキラキラした現象だったんだよ！みんな、自由を謳歌してたんだね！">
-<div class="text-4xl text-pink-700">👯‍♀️</div> <!-- アイコンの色をピンクに -->
-<h4 class="font-bold mt-2">モガ・モボ</h4>
-<p class="text-sm">新しい都市文化</p>
-</div>
-</div>
-</div>
-</section>
+      <div class="grid md:grid-cols-2 gap-8">
+        <div class="card p-6">
+          <h3 class="text-xl font-bold mb-4">経済：大戦景気で絶好調！</h3>
+          <p class="mb-2">ヨーロッパの国々が戦争で生産できない分、日本の製品が世界中で大ヒット！</p>
+          <ul class="list-disc list-inside space-y-2">
+            <li><span class="font-bold">輸出が急増：</span>第一次世界大戦でヨーロッパの国々が戦争でバタバタしてる間、彼らが作れないモノを日本がガンガン作って世界中に輸出したんだ！特に、船を作る会社（造船業）や、布を作る会社（紡績業）がもう大儲け！日本は、外国にお金を借りてた国（債務国）から、逆に外国にお金を貸せる国（債権国）に大逆転しちゃったんだよ！マジですごい！</li>
+            <li><span class="font-bold">「船成金」の登場：</span>海運業っていう船でモノを運ぶ仕事で、信じられないくらい大金持ちになった人たちがたくさん現れたんだ。彼らは『船成金』って呼ばれて、めちゃくちゃ豪華な生活を送ってたんだって！今のセレブとは比べ物にならないくらい、桁違いの裕福さだったらしいよ！夢が広がるね！</li>
+          </ul>
 
-<!-- 八乙女光 Section: 被差別部落の解放と大衆文化 -->
-<section id="member-yaotome" class="content-section" aria-hidden="true" aria-labelledby="member-yaotome-title">
-<div class="text-center mb-8">
-<h2 id="member-yaotome-title" class="text-3xl md:text-4xl font-extrabold text-amber-800">【八乙女光と響き合う】不条理に抗う魂と希望の文化：光を掴むぜ！</h2>
-<p class="mt-2 text-lg text-gray-600">人々の熱い思いと、時代が育んだ彩りを君と共に感じ取りたい。</p>
-</div>
-<div class="hsj-card p-6 rounded-lg mb-8 shadow">
-<p class="text-lg leading-relaxed"><span class="font-bold text-blue-700">八乙女光：</span>「なあ、君！不条理な現実に『NO！』と叫ぶ、揺るぎない魂の叫びを、僕と一緒に聞いてみないか！？この時代、社会の底辺で苦しい思いをしてきた人々が、自分たちの尊厳と平等を求めて、自らの手で立ち上がり、熱い声を上げたんだ。その魂の叫びは、やがて大きな波となって、時代を大きく動かす力となったんだよ！そして、どんなに厳しい時代でも、人々の心には必ず光が灯る。ラジオ放送の始まりや映画の大ヒットといった、新しいエンターテイメントが大衆の心に希望を与えたんだ。彼らの熱い思いと、時代が育んだ希望に満ちた彩りを、君と共に全身で感じ取りたい。さあ、僕らの光を掴みに行こうぜ！」</p>
-</div>
+          <div class="chart-container mt-4">
+            <h4 class="text-lg font-semibold text-gray-700 mb-2">日本の貿易額の変動（相対値）</h4>
+            <canvas id="economyChart2"></canvas>
+          </div>
+        </div>
 
-<div class="card p-6 mt-8">
-<h3 class="text-2xl font-bold text-center mb-4">被差別部落の解放運動🤝</h3>
-<p class="text-center text-gray-600 mb-6">差別をなくすために立ち上がった人々の運動！</p>
-<div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-center">
-<div class="social-movement-card p-4 rounded-lg cursor-pointer hover:bg-blue-50 transition-colors"
-data-title="全国水平社の結成"
-data-details="昔から続いていた、一部の人たちへのひどい差別をなくすために、『全国水平社（ぜんこくすいへいしゃ）』っていうグループが1922年に自分たちの手で立ち上がったんだ！「みんな、人間なんだから平等だろ！」っていう、『人の世に熱あれ、人間に光あれ』っていう、めちゃくちゃ力強いスローガンを掲げて、差別の撤廃と人間としての平等を強く訴えたんだよ。これは、日本で初めて大規模に人権を守ろうとした、超重要な運動だったんだ！">
-<div class="text-4xl text-green-800">✊</div> <!-- アイコンの色を濃い緑に -->
-<h4 class="font-bold mt-2">全国水平社</h4>
-<p class="text-sm">差別の撤廃を訴える</p>
-</div>
-<div class="social-movement-card p-4 rounded-lg cursor-pointer hover:bg-blue-50 transition-colors"
-data-title="大衆文化の発展"
-data-details="厳しい社会情勢の中、人々の心にパッと光を灯してくれたのが、新しいエンターテイメントの登場だ！ラジオ放送が始まったり、映画が全国で大ヒットしたり、雑誌もいろんな種類が出てきて、みんなが気軽に情報を手に入れたり、楽しい時間を過ごせるようになったんだ。都会にはおしゃれなカフェや喫茶店がめちゃくちゃ賑わって、新しい文化が次々に花開いたんだよ！みんな、どんなに大変でも、ちゃんと楽しみを見つけてたんだね！">
-<div class="text-4xl text-red-600">📻🎬</div> <!-- アイコンの色を赤に -->
-<h4 class="font-bold mt-2">ラジオ・映画</h4>
-<p class="text-sm">エンタメの普及</p>
-</div>
-</div>
-</div>
-</section>
+        <div class="card p-6">
+          <h3 class="text-xl font-bold mb-4">外交と社会：光と影の出来事</h3>
+          <ul class="list-disc list-inside space-y-2">
+            <li><span class="font-bold">二十一か条の要求：</span>日本は、中国に対して「これとこれとこれを、日本の言う通りにしてくれ！」っていう、かなり強引なお願い（要求）を突きつけたんだ。これに対して、ヨーロッパやアメリカの国々から「日本、ちょっとやりすぎじゃない！？」って、めっちゃ非難されちゃったんだよ。外交って、本当に難しいバランス感覚が大事だね。</li>
+            <li><span class="font-bold">シベリア出兵：</span>ロシアっていう国で革命が起きた時、日本は軍隊を送って介入しようとしたんだ（シベリア出兵）。でも、このせいで国内でお米が買い占められて、値段がグンと上がっちゃったんだ！「お米が高くて買えない！」って、全国各地で怒った人たちが暴動を起こしたんだよ、それが『米騒動（こめそうどう）』！経済は良くても、国民みんなの生活は苦しかったんだね…。光と影がはっきりした時代だったんだ。</li>
+          </ul>
+        </div>
+      </div>
+    </section>
 
-<!-- 新しいクイズセクションの追加 -->
-<section id="quiz-section" class="mt-12 p-6 bg-white rounded-lg shadow-xl border-t-4 border-blue-500">
-<div class="text-center mb-8">
-<h2 class="text-3xl md:text-4xl font-extrabold text-blue-800">🎉 Hey! Say! JUMPと歴史クイズ！君の知識を試そう！ 🎉</h2>
-<p class="mt-2 text-xl text-gray-700">メンバーからの激熱エールをゲットするチャンス！いざ、挑戦！</p>
-</div>
+    <!-- 伊野尾慧 -->
+    <section id="member-inoo" class="content-section" aria-hidden="true" aria-labelledby="member-inoo-title" role="tabpanel">
+      <div class="text-center mb-8">
+        <h2 id="member-inoo-title" class="text-3xl md:text-4xl font-extrabold text-teal-800">【伊野尾慧と紐解く】労働者の声とデモクラシーの真髄：僕らの未来へ繋げよう！</h2>
+        <p class="mt-2 text-lg text-gray-600">知的な視点で、自由を求めるエネルギーの背景を探ろう。</p>
+      </div>
+      <div class="hsj-card p-6 rounded-lg mb-8 shadow">
+        <p class="text-lg leading-relaxed"><span class="font-bold text-blue-700">伊野尾慧：</span>「知識を深めることは、時に時代を大きく動かす力になるんだ。大正から昭和初期にかけて、日本社会はものすごいスピードで変化していった。そんな変革期には、いつだって人々の熱い声が響き渡るものだよね。特にこの時代、工場で働く労働者たちは、ひどい労働環境や、給料が安すぎるっていう不当な扱いに苦しんでいたんだ。でも彼らは黙ってなんかいなかった。勇気を出して立ち上がり、自分たちの権利を求めて声を上げたんだ。彼らの叫び、そして『大正デモクラシー』っていう、自由と民主主義を求める思想の真髄。その複雑に絡み合った歴史の糸を、僕と君で、丁寧に、そして知的に紐解いていこうじゃないか。きっと、僕らの未来に繋がる、新しい発見が君を待っているはずだよ。さあ、一緒に考えてみよう。」</p>
+      </div>
 
-<div id="quiz-container">
-<h3 id="question-text" class="text-2xl font-bold text-gray-800 mb-6 leading-relaxed"></h3>
-<div id="options-container" class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
-<!-- クイズの選択肢がここに表示されます -->
-</div>
-<div class="flex justify-center items-center gap-4">
-<button id="submit-answer-button" class="quiz-button px-6 py-3" disabled>これだ！って思う答えをクリック！</button>
-<button id="next-question-button" class="quiz-button px-6 py-3" style="display: none;">次の問題へ！</button>
-<button id="restart-quiz-button" class="quiz-button px-6 py-3" style="display: none;">もう一度チャレンジ！</button>
-</div>
-<div id="feedback-container" class="quiz-feedback mt-6 p-4 rounded-lg hidden">
-<p id="feedback-message" class="font-bold mb-2"></p>
-<p id="explanation-text" class="text-gray-700"></p>
-</div>
-</div>
-</section>
-</main>
+      <div class="card p-6 mt-8">
+        <h3 class="text-2xl font-bold text-center mb-4">活発化する労働運動✊</h3>
+        <p class="text-center text-gray-600 mb-6">産業の発展とともに、労働者の不満も高まっていったんだ。</p>
 
-<footer class="bg-gray-800 text-white text-center p-6 mt-8">
-<p>&copy; Hey! Say! JUMPと学ぶ歴史の旅</p>
-</footer>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-center">
+          <div class="social-movement-card p-4 rounded-lg cursor-pointer hover:bg-blue-50 transition-colors"
+               data-title="労働運動の広がり"
+               data-details="工場や会社がどんどん大きくなる一方で、働く人たちの給料は全然上がらないし、毎日めちゃくちゃ長い時間働かされるっていう、本当にひどい状況だったんだ。だから、『こんなのおかしい！』って、働く人たちが怒って、仕事をしない（ストライキ）とか、みんなで会社に文句を言う（労働争議）ことが、たくさん起こるようになったんだよ。労働組合っていう、働く人たちの味方のグループもどんどん増えて、みんなで力を合わせて権利を訴える動きが、すごく活発になったんだ！">
+            <div class="text-4xl text-red-700">💪</div>
+            <h4 class="font-bold mt-2">労働争議</h4>
+            <p class="text-sm">ストライキの増加</p>
+          </div>
 
-<!-- Modal Structure -->
-<div id="infoModal" class="modal-overlay">
-<div class="modal-content">
-<button class="modal-close-button" aria-label="モーダルを閉じる">&times;</button>
-<h3 id="modalTitle" class="text-2xl font-bold mb-4 text-gray-800"></h3>
-<p id="modalDetails" class="text-gray-700 mb-4"></p>
-<div id="modalHSJMember" class="text-sm text-blue-600 font-semibold"></div>
-</div>
-</div>
+          <div class="social-movement-card p-4 rounded-lg cursor-pointer hover:bg-blue-50 transition-colors"
+               data-title="友愛会の設立"
+               data-details="鈴木文治（すずきぶんじ）さんっていう人が作った『友愛会（ゆうあいかい）』は、日本の労働運動を最初にリードした、とっても大事なグループなんだ。最初は会社と働く人が仲良くするための活動が中心だったんだけど、だんだんと「働く人たちの権利をもっとしっかり守ろう！」っていう活動に変わっていって、今の労働組合の考え方の元になったんだよ。働く人たちの未来を切り開いた、すごい組織なんだ！">
+            <div class="text-4xl text-blue-700">🤝</div>
+            <h4 class="font-bold mt-2">友愛会</h4>
+            <p class="text-sm">鈴木文治</p>
+          </div>
+        </div>
+      </div>
+      <!-- 大正デモクラシーや文化については、もしスペースがあれば追記 -->
+    </section>
 
-<script>
-    const navButtons = document.querySelectorAll('.nav-button');
-    const contentSections = document.querySelectorAll('.content-section');
+    <!-- 髙木雄也 -->
+    <section id="member-takaki" class="content-section" aria-hidden="true" aria-labelledby="member-takaki-title" role="tabpanel">
+      <div class="text-center mb-8">
+        <h2 id="member-takaki-title" class="text-3xl md:text-4xl font-extrabold text-indigo-800">【髙木雄也と魅せる】新しい女性の時代：煌めく自由と新たな輝き！</h2>
+        <p class="mt-2 text-lg text-gray-600">女性たちが輝き、文化が花開く。その魅力に触れてみないか？</p>
+      </div>
+      <div class="hsj-card p-6 rounded-lg mb-8 shadow">
+        <p class="text-lg leading-relaxed"><span class="font-bold text-blue-700">髙木雄也：</span>「おい、そこの君！自由を求める強い魂が、まるで嵐のように、新しい時代を切り拓いていく瞬間を、僕と一緒に体験してみないか？大正から昭和初期にかけて、日本の女性たちはマジでかっこよかったんだ。社会に出てバリバリ働いたり、自分の意見をハッキリ主張したり…。彼女たちの社会進出は目覚ましく、その最先端のファッションやクールなライフスタイルは、当時の都市文化を最高に彩ったんだぜ。女性たちがキラキラと輝き、新しい文化がドンドン花開いた、あの煌めく瞬間。そのドラマを、君と僕で、全身で感じてみないか？きっと、君の心にも、新しい発見と自由への情熱が生まれるはずだ！」</p>
+      </div>
+
+      <div class="card p-6 mt-8">
+        <h3 class="text-2xl font-bold text-center mb-4">女性解放運動と新しい文化🙋‍♀️</h3>
+        <p class="text-center text-gray-600 mb-6">女性たちが社会の主役になり始めた時代！</p>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-center">
+          <div class="social-movement-card p-4 rounded-lg cursor-pointer hover:bg-blue-50 transition-colors"
+               data-title="女性解放運動"
+               data-details="「男も女も平等なはずだ！」って、女性たちが立ち上がった、まさに革命的な動き！女性の政治への参加（選挙権ちょうだい！）、自由に仕事を選びたい！って、いろんなことを強く訴えたんだ。市川房枝（いちかわふさえ）さんや平塚らいてう（ひらつからいちょう）さんっていう、超パワフルな女性たちが中心になって、女性の地位を良くするためにめちゃくちゃ頑張ったんだよ。『新しい女』っていう言葉も生まれて、女性たちの意識が大きく変わった、本当にエネルギッシュな時代だったんだ！">
+            <div class="text-4xl text-purple-700">👠</div>
+            <h4 class="font-bold mt-2">女性解放運動</h4>
+            <p class="text-sm">市川房枝、平塚らいてう</p>
+          </div>
+
+          <div class="social-movement-card p-4 rounded-lg cursor-pointer hover:bg-blue-50 transition-colors"
+               data-title="モガ・モボの登場"
+               data-details="大正時代の終わりから昭和の初めにかけて、海外の文化がドンドン日本に入ってきて、超おしゃれで新しいライフスタイルを楽しむ若者たちが登場したんだ！それが『モダンガール（モガ）』と『モダンボーイ（モボ）』！モガは洋服を着てカフェでおしゃべりしたり、モボは最新のファッションで街をカッコよく歩いたり…。当時の都会の流行を象徴する、マジでキラキラした現象だったんだよ！みんな、自由を謳歌してたんだね！">
+            <div class="text-4xl text-pink-700">👯‍♀️</div>
+            <h4 class="font-bold mt-2">モガ・モボ</h4>
+            <p class="text-sm">新しい都市文化</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 八乙女光 -->
+    <section id="member-yaotome" class="content-section" aria-hidden="true" aria-labelledby="member-yaotome-title" role="tabpanel">
+      <div class="text-center mb-8">
+        <h2 id="member-yaotome-title" class="text-3xl md:text-4xl font-extrabold text-amber-800">【八乙女光と響き合う】不条理に抗う魂と希望の文化：光を掴むぜ！</h2>
+        <p class="mt-2 text-lg text-gray-600">人々の熱い思いと、時代が育んだ彩りを君と共に感じ取りたい。</p>
+      </div>
+      <div class="hsj-card p-6 rounded-lg mb-8 shadow">
+        <p class="text-lg leading-relaxed"><span class="font-bold text-blue-700">八乙女光：</span>「なあ、君！不条理な現実に『NO！』と叫ぶ、揺るぎない魂の叫びを、僕と一緒に聞いてみないか！？この時代、社会の底辺で苦しい思いをしてきた人々が、自分たちの尊厳と平等を求めて、自らの手で立ち上がり、熱い声を上げたんだ。その魂の叫びは、やがて大きな波となって、時代を大きく動かす力となったんだよ！そして、どんなに厳しい時代でも、人々の心には必ず光が灯る。ラジオ放送の始まりや映画の大ヒットといった、新しいエンターテイメントが大衆の心に希望を与えたんだ。彼らの熱い思いと、時代が育んだ希望に満ちた彩りを、君と共に全身で感じ取りたい。さあ、僕らの光を掴みに行こうぜ！」</p>
+      </div>
+
+      <div class="card p-6 mt-8">
+        <h3 class="text-2xl font-bold text-center mb-4">被差別部落の解放運動🤝</h3>
+        <p class="text-center text-gray-600 mb-6">差別をなくすために立ち上がった人々の運動！</p>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-center">
+          <div class="social-movement-card p-4 rounded-lg cursor-pointer hover:bg-blue-50 transition-colors"
+               data-title="全国水平社の結成"
+               data-details="昔から続いていた、一部の人たちへのひどい差別をなくすために、『全国水平社（ぜんこくすいへいしゃ）』っていうグループが1922年に自分たちの手で立ち上がったんだ！「みんな、人間なんだから平等だろ！」っていう、『人の世に熱あれ、人間に光あれ』っていう、めちゃくちゃ力強いスローガンを掲げて、差別の撤廃と人間としての平等を強く訴えたんだよ。これは、日本で初めて大規模に人権を守ろうとした、超重要な運動だったんだ！">
+            <div class="text-4xl text-green-800">✊</div>
+            <h4 class="font-bold mt-2">全国水平社</h4>
+            <p class="text-sm">差別の撤廃を訴える</p>
+          </div>
+
+          <div class="social-movement-card p-4 rounded-lg cursor-pointer hover:bg-blue-50 transition-colors"
+               data-title="大衆文化の発展"
+               data-details="厳しい社会情勢の中、人々の心にパッと光を灯してくれたのが、新しいエンターテイメントの登場だ！ラジオ放送が始まったり、映画が全国で大ヒットしたり、雑誌もいろんな種類が出てきて、みんなが気軽に情報を手に入れたり、楽しい時間を過ごせるようになったんだ。都会にはおしゃれなカフェや喫茶店がめちゃくちゃ賑わって、新しい文化が次々に花開いたんだよ！みんな、どんなに大変でも、ちゃんと楽しみを見つけてたんだね！">
+            <div class="text-4xl text-red-600">📻🎬</div>
+            <h4 class="font-bold mt-2">ラジオ・映画</h4>
+            <p class="text-sm">エンタメの普及</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- クイズ -->
+    <section id="quiz-section" class="mt-12 p-6 bg-white rounded-lg shadow-xl border-t-4 border-blue-500">
+      <div class="text-center mb-8">
+        <h2 class="text-3xl md:text-4xl font-extrabold text-blue-800">🎉 Hey! Say! JUMPと歴史クイズ！君の知識を試そう！ 🎉</h2>
+        <p class="mt-2 text-xl text-gray-700">メンバーからの激熱エールをゲットするチャンス！いざ、挑戦！</p>
+      </div>
+
+      <div id="quiz-container">
+        <h3 id="question-text" class="text-2xl font-bold text-gray-800 mb-6 leading-relaxed"></h3>
+        <div id="options-container" class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6"></div>
+
+        <div class="flex justify-center items-center gap-4">
+          <button type="button" id="submit-answer-button" class="quiz-button px-6 py-3" disabled>これだ！って思う答えをクリック！</button>
+          <button type="button" id="next-question-button" class="quiz-button px-6 py-3" style="display: none;">次の問題へ！</button>
+          <button type="button" id="restart-quiz-button" class="quiz-button px-6 py-3" style="display: none;">もう一度チャレンジ！</button>
+        </div>
+
+        <div id="feedback-container" class="quiz-feedback mt-6 p-4 rounded-lg hidden" aria-live="polite">
+          <p id="feedback-message" class="font-bold mb-2"></p>
+          <p id="explanation-text" class="text-gray-700"></p>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer class="bg-gray-800 text-white text-center p-6 mt-8">
+    <p>&copy; Hey! Say! JUMPと学ぶ歴史の旅</p>
+  </footer>
+
+  <!-- Modal -->
+  <div id="infoModal" class="modal-overlay">
+    <div class="modal-content" role="dialog" aria-modal="true" aria-labelledby="modalTitle" tabindex="-1">
+      <button class="modal-close-button" aria-label="モーダルを閉じる" type="button">&times;</button>
+      <h3 id="modalTitle" class="text-2xl font-bold mb-4 text-gray-800"></h3>
+      <p id="modalDetails" class="text-gray-700 mb-4"></p>
+      <div id="modalHSJMember" class="text-sm text-blue-600 font-semibold"></div>
+    </div>
+  </div>
+
+  <script>
+    // =========================
+    // 初期参照
+    // =========================
+    const navButtons = document.querySelectorAll('.nav-button[role="tab"]');
+    const contentSections = document.querySelectorAll('.content-section[role="tabpanel"]');
     const timelineItems = document.querySelectorAll('.timeline-item');
     const socialMovementCards = document.querySelectorAll('.social-movement-card');
 
     const infoModal = document.getElementById('infoModal');
+    const modalContent = infoModal.querySelector('.modal-content');
     const modalCloseButton = document.querySelector('.modal-close-button');
     const modalTitle = document.getElementById('modalTitle');
     const modalDetails = document.getElementById('modalDetails');
     const modalHSJMember = document.getElementById('modalHSJMember');
 
-    // ナビゲーションボタンのクリックイベント
+    // =========================
+    // タブ（ナビ）切替
+    // =========================
     navButtons.forEach(button => {
-        button.addEventListener('click', () => {
-            const targetId = button.dataset.target;
+      button.addEventListener('click', () => {
+        const targetId = button.dataset.target;
 
-            // すべてのナビボタンからactiveクラスを削除し、aria-currentをfalseに設定
-            navButtons.forEach(btn => {
-                btn.classList.remove('active');
-                btn.removeAttribute('aria-current');
-            });
-            // クリックされたボタンにactiveクラスを追加し、aria-currentをpageに設定
-            button.classList.add('active');
-            button.setAttribute('aria-current', 'page');
-
-            // すべてのコンテンツセクションからactiveクラスを削除し、aria-hiddenをtrueに設定
-            contentSections.forEach(section => {
-                if (section.id === targetId) {
-                    section.classList.add('active');
-                    section.removeAttribute('aria-hidden'); // アクティブなセクションは表示
-                } else {
-                    section.classList.remove('active');
-                    section.setAttribute('aria-hidden', 'true'); // 非アクティブなセクションは非表示
-                }
-            });
+        // active/ARIA 更新
+        navButtons.forEach(btn => {
+          btn.classList.remove('active');
+          btn.setAttribute('aria-selected', 'false');
+          btn.setAttribute('aria-expanded', 'false');
+          btn.removeAttribute('aria-current');
         });
+        button.classList.add('active');
+        button.setAttribute('aria-selected', 'true');
+        button.setAttribute('aria-expanded', 'true');
+        button.setAttribute('aria-current', 'page');
+
+        contentSections.forEach(section => {
+          if (section.id === targetId) {
+            section.classList.add('active');
+            section.removeAttribute('aria-hidden');
+          } else {
+            section.classList.remove('active');
+            section.setAttribute('aria-hidden', 'true');
+          }
+        });
+      });
     });
 
-    // モーダルを開く関数
+    // =========================
+    // モーダル操作（アクセシビリティ配慮）
+    // =========================
+    let previouslyFocused;
     function openModal(title, details, hsjMember = '') {
-        modalTitle.textContent = title;
-        modalDetails.textContent = details;
-        if (hsjMember) {
-            modalHSJMember.textContent = `（ナビゲーター例：${hsjMember}）`;
-            modalHSJMember.classList.remove('hidden'); // メンバー表示があれば表示
-        } else {
-            modalHSJMember.textContent = '';
-            modalHSJMember.classList.add('hidden'); // なければ非表示
-        }
-        infoModal.classList.add('active');
-        document.body.style.overflow = 'hidden'; // 背景のスクロールを禁止
+      modalTitle.textContent = title;
+      modalDetails.textContent = details;
+      if (hsjMember) {
+        modalHSJMember.textContent = `（ナビゲーター例：${hsjMember}）`;
+        modalHSJMember.classList.remove('hidden');
+      } else {
+        modalHSJMember.textContent = '';
+        modalHSJMember.classList.add('hidden');
+      }
+
+      previouslyFocused = document.activeElement;
+      infoModal.classList.add('active');
+      document.body.style.overflow = 'hidden';
+
+      // 初期フォーカス
+      modalContent.focus();
     }
 
-    // モーダルを閉じる関数
     function closeModal() {
-        infoModal.classList.remove('active');
-        document.body.style.overflow = ''; // 背景のスクロールを許可
+      infoModal.classList.remove('active');
+      document.body.style.overflow = '';
+      // フォーカス復帰
+      if (previouslyFocused && previouslyFocused.focus) previouslyFocused.focus();
     }
 
-    // タイムラインアイテムのクリックイベント
+    // フォーカストラップ（簡易）
+    infoModal.addEventListener('keydown', (e) => {
+      if (e.key !== 'Tab') return;
+      const focusable = infoModal.querySelectorAll('button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])');
+      if (!focusable.length) return;
+      const first = focusable[0];
+      const last = focusable[focusable.length - 1];
+      if (e.shiftKey && document.activeElement === first) { last.focus(); e.preventDefault(); }
+      else if (!e.shiftKey && document.activeElement === last) { first.focus(); e.preventDefault(); }
+    });
+
+    // タイムライン/カード → モーダル
     timelineItems.forEach(item => {
-        item.addEventListener('click', () => {
-            const title = item.dataset.title;
-            const details = item.dataset.details;
-            openModal(title, details);
-        });
+      item.addEventListener('click', () => openModal(item.dataset.title, item.dataset.details));
     });
-
-    // 社会運動カードのクリックイベント
     socialMovementCards.forEach(card => {
-        card.addEventListener('click', () => {
-            const title = card.dataset.title;
-            const details = card.dataset.details;
-            const hsjMember = card.dataset.hsjMember || '';
-            openModal(title, details, hsjMember);
-        });
+      card.addEventListener('click', () => {
+        const title = card.dataset.title;
+        const details = card.dataset.details;
+        const hsjMember = card.dataset.hsjMember || '';
+        openModal(title, details, hsjMember);
+      });
     });
 
-    // モーダル閉じるボタンのクリックイベント
+    // 閉じる操作
     modalCloseButton.addEventListener('click', closeModal);
+    infoModal.addEventListener('click', (e) => { if (e.target === infoModal) closeModal(); });
+    document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && infoModal.classList.contains('active')) closeModal(); });
 
-    // モーダルのオーバーレイクリックで閉じる
-    infoModal.addEventListener('click', (event) => {
-        if (event.target === infoModal) {
-            closeModal();
-        }
-    });
-
-    // ESCキーでモーダルを閉じる
-    document.addEventListener('keydown', (event) => {
-        if (event.key === 'Escape' && infoModal.classList.contains('active')) {
-            closeModal();
-        }
-    });
-
-    // Chart.jsの初期化 (有岡大貴セクションに移動)
+    // =========================
+    // Chart.js（重複生成防止）
+    // =========================
     let chartInstances = {};
-
     function initializeChart(canvasId) {
-        const ctx = document.getElementById(canvasId);
-        if (ctx && !chartInstances[canvasId]) {
-            chartInstances[canvasId] = new Chart(ctx, {
-                type: 'line',
-                data: {
-                    labels: ['大戦前', '大戦中 (1918)', '戦後恐慌 (1920)', '震災後 (1923)', '金融恐慌 (1927)', '昭和恐慌 (1930)'],
-                    datasets: [{
-                        label: '日本の貿易額（相対値）',
-                        data: [10, 80, 40, 50, 30, 20],
-                        borderColor: '#10b981', /* チャートの線を明るい緑に */
-                        backgroundColor: 'rgba(16, 185, 129, 0.2)', /* 背景を薄い緑に */
-                        fill: true,
-                        tension: 0.3,
-                        pointBackgroundColor: '#10b981',
-                        pointBorderColor: '#fff',
-                        pointHoverBackgroundColor: '#fff',
-                        pointHoverBorderColor: '#10b981',
-                        pointRadius: 5,
-                        pointHoverRadius: 7,
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    plugins: {
-                        tooltip: {
-                            callbacks: {
-                                label: function (context) {
-                                    let label = context.dataset.label || '';
-                                    if (label) {
-                                        label += ': ';
-                                    }
-                                    if (context.parsed.y !== null) {
-                                        label += context.parsed.y + ' (相対値)';
-                                    }
-                                    return label;
-                                }
-                            }
-                        },
-                        legend: {
-                            display: true,
-                            position: 'top',
-                            labels: {
-                                font: {
-                                    size: 14,
-                                    family: 'Noto Sans JP',
-                                }
-                            }
-                        }
-                    },
-                    scales: {
-                        x: {
-                            grid: {
-                                display: false
-                            }
-                        },
-                        y: {
-                            beginAtZero: true,
-                            ticks: {
-                                callback: function (value, index, values) {
-                                    return value;
-                                },
-                                font: {
-                                    size: 12,
-                                    family: 'Noto Sans JP',
-                                }
-                            },
-                            grid: {
-                                color: '#e2e8f0'
-                            }
-                        }
-                    }
+      const ctx = document.getElementById(canvasId);
+      if (ctx && !chartInstances[canvasId]) {
+        chartInstances[canvasId] = new Chart(ctx, {
+          type: 'line',
+          data: {
+            labels: ['大戦前', '大戦中 (1918)', '戦後恐慌 (1920)', '震災後 (1923)', '金融恐慌 (1927)', '昭和恐慌 (1930)'],
+            datasets: [{
+              label: '日本の貿易額（相対値）',
+              data: [10, 80, 40, 50, 30, 20],
+              borderColor: '#10b981',
+              backgroundColor: 'rgba(16,185,129,0.2)',
+              fill: true,
+              tension: 0.3,
+              pointBackgroundColor: '#10b981',
+              pointBorderColor: '#fff',
+              pointHoverBackgroundColor: '#fff',
+              pointHoverBorderColor: '#10b981',
+              pointRadius: 5,
+              pointHoverRadius: 7,
+            }]
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+              tooltip: {
+                callbacks: {
+                  label: function (context) {
+                    let label = context.dataset.label || '';
+                    if (label) label += ': ';
+                    if (context.parsed.y !== null) label += context.parsed.y + ' (相対値)';
+                    return label;
+                  }
                 }
-            });
-        }
+              },
+              legend: {
+                display: true,
+                position: 'top',
+                labels: { font: { size: 14, family: 'Noto Sans JP' } }
+              }
+            },
+            scales: {
+              x: { grid: { display: false } },
+              y: {
+                beginAtZero: true,
+                ticks: { font: { size: 12, family: 'Noto Sans JP' } },
+                grid: { color: '#e2e8f0' }
+              }
+            }
+          }
+        });
+      }
     }
 
     document.addEventListener('DOMContentLoaded', () => {
-        initializeChart('economyChart2');
+      initializeChart('economyChart2');
     });
 
-
-    // --- クイズ機能の追加 ---
+    // =========================
+    // クイズ
+    // =========================
     const quizQuestions = [
-        {
-            question: '第一次護憲運動のスローガンとして、もっとも正しいものはどれだ！？',
-            options: [
-                '自由民権万歳！',
-                '富国強兵！',
-                '閥族打破・憲政擁護！',
-                '大正デモクラシー！'
-            ],
-            correctAnswerIndex: 2,
-            explanation: '第一次護憲運動は、藩閥政治に反対し、憲法に基づいた政治を守ることを訴える運動だったんだ。だから、「閥族打破（一部の偉い人たちが政治を牛耳るのをやめろ！）」と「憲政擁護（憲法を守って、みんなの意見を聞く政治をしよう！）」がスローガンになったんだね！',
-            correctFeedback: '【山田涼介】「完璧だ！君の知識、本物だよ！僕の心に響く、最高の答えだね！このまま次の問題も、最高に輝く答えを見つけていこうぜ！」',
-            incorrectFeedback: '【有岡大貴】「おっと、惜しい！でも大丈夫、僕らの旅はまだ始まったばかり！間違えることは新しい発見のチャンスだよ！さあ、僕と一緒に解説を見て、もう一度知識をアップデートしようぜ！」'
-        },
-        {
-            question: '第一次世界大戦中に日本経済が超絶好調になった時に生まれた言葉で、特に海運業で大儲けした人たちを指すのはどれだ！？',
-            options: [
-                '米騒動長者',
-                '船成金',
-                '鉄道王',
-                '繊維セレブ'
-            ],
-            correctAnswerIndex: 1,
-            explanation: '第一次世界大戦中、ヨーロッパが戦争で手一杯だったから、日本の製品や船での輸送の需要がめちゃくちゃ増えたんだ。特に船を持つ海運業は大儲けして、それまで想像もできなかったほどの大金持ちになった人たちがたくさん現れたんだよ。彼らを『船成金』と呼んだんだ！景気が良すぎて、まさにバブルだったんだね！',
-            correctFeedback: '【中島裕翔】「さすがだね！君の洞察力は、まるで僕のカメラのレンズ越しに見る景色のようにクリアだ。歴史の光と影を正確に捉えている。この調子で、次なる真実も解き明かしていこう。」',
-            incorrectFeedback: '【伊野尾慧】「ん〜、ちょっと考えすぎちゃったかな？でも、大丈夫。間違えることは、知的な探求の一歩だよね。僕と一緒に、もう一度この時代の背景を整理してみようか。次で挽回しちゃおう！」'
-        },
-        {
-            question: '1925年に、満25歳以上の『全ての男子』に選挙権が与えられた、画期的な法律は何だ！？',
-            options: [
-                '治安維持法',
-                '普通選挙法',
-                '選挙管理法',
-                '国民総動員法'
-            ],
-            correctAnswerIndex: 1,
-            explanation: '1925年に制定された『普通選挙法』は、それまでお金持ちしか投票できなかった選挙を、税金を払っているかどうかに関わらず、満25歳以上の全ての男子が参加できるようになった、とっても大切な法律なんだ。これは、国民の政治参加への道を大きく開いた、歴史的な一歩だったんだよ！',
-            correctFeedback: '【知念侑李】「すごいよ、君！その知識、まるで僕のダンスみたいにキレッキレだね！みんなの願いが叶ったこの法律のこと、君もきっと分かってくれたんだね！僕と一緒に、次の問題も笑顔でクリアしちゃおう！」',
-            incorrectFeedback: '【髙木雄也】「おいおい、ちょっと焦っちゃったか？でも、気にすんな！間違ったって、それが次へのステップだろ？この法律がどんなに重要だったか、もう一度僕と一緒に復習しようぜ！次こそは、最高の答えを見せてくれよ！」'
-        },
-        {
-            question: '1922年に、被差別部落の人々が差別の撤廃を訴えて結成した団体で、「人の世に熱あれ、人間に光あれ」という力強いスローガンを掲げたのはどれだ！？',
-            options: [
-                '友愛会',
-                '日本農民組合',
-                '赤色連盟',
-                '全国水平社'
-            ],
-            correctAnswerIndex: 3,
-            explanation: '1922年に結成された『全国水平社』は、被差別部落の人々が、昔から続く不当な差別をなくし、人間としての平等な権利を求めて立ち上がった、日本で初めての大規模な人権運動の団体なんだ。「人の世に熱あれ、人間に光あれ」というスローガンは、彼らの強い願いと、未来への希望が込められているんだよ！',
-            correctFeedback: '【八乙女光】「Yeah！君の答え、まじで最高だぜ！歴史の真実を掴むその情熱、僕の心にビンビン響いてくる！不条理に抗う人々の魂に、君も光を灯してくれたんだね！この勢いで、最終問題までぶっちぎるぜ！」',
-            incorrectFeedback: '【薮宏太】「うん、その気持ちはわかるよ。でも、もう少し深く考えてみようか。この団体が掲げたスローガンには、強い願いが込められているんだ。間違ったって大丈夫。一つずつ、丁寧に理解を深めていくことが大切だからね。さあ、解説を読んで、次のチャンスに繋げよう。」'
-        }
+      {
+        question: '第一次護憲運動のスローガンとして、もっとも正しいものはどれだ！？',
+        options: ['自由民権万歳！', '富国強兵！', '閥族打破・憲政擁護！', '大正デモクラシー！'],
+        correctAnswerIndex: 2,
+        explanation: '第一次護憲運動は、藩閥政治に反対し、憲法に基づいた政治を守ることを訴える運動だったんだ。だから、「閥族打破（一部の偉い人たちが政治を牛耳るのをやめろ！）」と「憲政擁護（憲法を守って、みんなの意見を聞く政治をしよう！）」がスローガンになったんだね！',
+        correctFeedback: '【山田涼介】「完璧だ！君の知識、本物だよ！僕の心に響く、最高の答えだね！このまま次の問題も、最高に輝く答えを見つけていこうぜ！」',
+        incorrectFeedback: '【有岡大貴】「おっと、惜しい！でも大丈夫、僕らの旅はまだ始まったばかり！間違えることは新しい発見のチャンスだよ！さあ、僕と一緒に解説を見て、もう一度知識をアップデートしようぜ！」'
+      },
+      {
+        question: '第一次世界大戦中に日本経済が超絶好調になった時に生まれた言葉で、特に海運業で大儲けした人たちを指すのはどれだ！？',
+        options: ['米騒動長者', '船成金', '鉄道王', '繊維セレブ'],
+        correctAnswerIndex: 1,
+        explanation: '第一次世界大戦中、ヨーロッパが戦争で手一杯だったから、日本の製品や船での輸送の需要がめちゃくちゃ増えたんだ。特に船を持つ海運業は大儲けして、それまで想像もできなかったほどの大金持ちになった人たちがたくさん現れたんだよ。彼らを『船成金』と呼んだんだ！景気が良すぎて、まさにバブルだったんだね！',
+        correctFeedback: '【中島裕翔】「さすがだね！君の洞察力は、まるで僕のカメラのレンズ越しに見る景色のようにクリアだ。歴史の光と影を正確に捉えている。この調子で、次なる真実も解き明かしていこう。」',
+        incorrectFeedback: '【伊野尾慧】「ん〜、ちょっと考えすぎちゃったかな？でも、大丈夫。間違えることは、知的な探求の一歩だよね。僕と一緒に、もう一度この時代の背景を整理してみようか。次で挽回しちゃおう！」'
+      },
+      {
+        question: '1925年に、満25歳以上の『全ての男子』に選挙権が与えられた、画期的な法律は何だ！？',
+        options: ['治安維持法', '普通選挙法', '選挙管理法', '国民総動員法'],
+        correctAnswerIndex: 1,
+        explanation: '1925年に制定された『普通選挙法』は、それまでお金持ちしか投票できなかった選挙を、税金を払っているかどうかに関わらず、満25歳以上の全ての男子が参加できるようになった、とっても大切な法律なんだ。これは、国民の政治参加への道を大きく開いた、歴史的な一歩だったんだよ！',
+        correctFeedback: '【知念侑李】「すごいよ、君！その知識、まるで僕のダンスみたいにキレッキレだね！みんなの願いが叶ったこの法律のこと、君もきっと分かってくれたんだね！僕と一緒に、次の問題も笑顔でクリアしちゃおう！」',
+        incorrectFeedback: '【髙木雄也】「おいおい、ちょっと焦っちゃったか？でも、気にすんな！間違ったって、それが次へのステップだろ？この法律がどんなに重要だったか、もう一度僕と一緒に復習しようぜ！次こそは、最高の答えを見せてくれよ！」'
+      },
+      {
+        question: '1922年に、被差別部落の人々が差別の撤廃を訴えて結成した団体で、「人の世に熱あれ、人間に光あれ」という力強いスローガンを掲げたのはどれだ！？',
+        options: ['友愛会', '日本農民組合', '赤色連盟', '全国水平社'],
+        correctAnswerIndex: 3,
+        explanation: '1922年に結成された『全国水平社』は、被差別部落の人々が、昔から続く不当な差別をなくし、人間としての平等な権利を求めて立ち上がった、日本で初めての大規模な人権運動の団体なんだ。「人の世に熱あれ、人間に光あれ」というスローガンは、彼らの強い願いと、未来への希望が込められているんだよ！',
+        correctFeedback: '【八乙女光】「Yeah！君の答え、まじで最高だぜ！歴史の真実を掴むその情熱、僕の心にビンビン響いてくる！不条理に抗う人々の魂に、君も光を灯してくれたんだね！この勢いで、最終問題までぶっちぎるぜ！」',
+        incorrectFeedback: '【薮宏太】「うん、その気持ちはわかるよ。でも、もう少し深く考えてみようか。この団体が掲げたスローガンには、強い願いが込められているんだ。間違ったって大丈夫。一つずつ、丁寧に理解を深めていくことが大切だからね。さあ、解説を読んで、次のチャンスに繋げよう。」'
+      }
     ];
 
     let currentQuestionIndex = 0;
@@ -736,107 +647,92 @@ data-details="厳しい社会情勢の中、人々の心にパッと光を灯し
     const feedbackMessageElement = document.getElementById('feedback-message');
     const explanationTextElement = document.getElementById('explanation-text');
 
-    // クイズの表示関数
     function displayQuestion() {
-        feedbackContainer.classList.add('hidden'); // 前のフィードバックを隠す
-        nextButton.style.display = 'none'; // 次へボタンを隠す
-        submitButton.style.display = 'block'; // 提出ボタンを表示
-        submitButton.disabled = true; // 提出ボタンを無効化
-        selectedOption = null; // 選択肢をリセット
+      feedbackContainer.classList.add('hidden');
+      nextButton.style.display = 'none';
+      submitButton.style.display = 'block';
+      submitButton.disabled = true;
+      selectedOption = null;
 
-        if (currentQuestionIndex >= quizQuestions.length) {
-            // クイズ終了
-            questionTextElement.textContent = `クイズ終了！君のスコアは ${score} / ${quizQuestions.length} 問中、正解だったね！お疲れ様！`;
-            optionsContainer.innerHTML = ''; // 選択肢をクリア
-            submitButton.style.display = 'none';
-            restartButton.style.display = 'block'; // リスタートボタンを表示
-            feedbackMessageElement.textContent = '素晴らしい挑戦だったね！歴史の知識、かなりアップしたんじゃないかな！？';
-            explanationTextElement.textContent = 'もう一度チャレンジして、全問正解を目指そう！';
-            feedbackContainer.classList.remove('hidden');
-            return;
-        }
-
-        const currentQuestion = quizQuestions[currentQuestionIndex];
-        questionTextElement.textContent = `Q.${currentQuestionIndex + 1} ${currentQuestion.question}`;
-        optionsContainer.innerHTML = ''; // 選択肢を一度クリア
-
-        currentQuestion.options.forEach((option, index) => {
-            const optionElement = document.createElement('div');
-            optionElement.classList.add('quiz-option', 'p-3', 'rounded-lg', 'cursor-pointer', 'border-2', 'border-purple-300', 'hover:bg-purple-50', 'transition-colors');
-            optionElement.textContent = option;
-            optionElement.dataset.index = index;
-            optionElement.addEventListener('click', () => selectOption(optionElement, index));
-            optionsContainer.appendChild(optionElement);
-        });
-    }
-
-    // 選択肢が選ばれた時の処理
-    function selectOption(element, index) {
-        document.querySelectorAll('.quiz-option').forEach(opt => {
-            opt.classList.remove('selected');
-        });
-        element.classList.add('selected');
-        selectedOption = index;
-        submitButton.disabled = false; // 選択されたら提出ボタンを有効化
-        submitButton.textContent = 'これで答えを提出するぜ！';
-    }
-
-    // 回答を提出する処理
-    submitButton.addEventListener('click', () => {
-        if (selectedOption === null) {
-            // alert('選択肢を選んでね！'); // アラートは使わない
-            feedbackMessageElement.textContent = '先に答えを選んでから提出してね！';
-            explanationTextElement.textContent = '';
-            feedbackContainer.classList.remove('hidden');
-            return;
-        }
-
-        const currentQuestion = quizQuestions[currentQuestionIndex];
-        const optionElements = document.querySelectorAll('.quiz-option');
-
-        // すべての選択肢をクリック不能にする
-        optionElements.forEach(opt => opt.style.pointerEvents = 'none');
-
-        // 正解・不正解のスタイルを適用
-        if (selectedOption === currentQuestion.correctAnswerIndex) {
-            optionElements[selectedOption].classList.add('correct');
-            score++;
-            feedbackMessageElement.textContent = currentQuestion.correctFeedback;
-            feedbackContainer.style.borderLeftColor = '#10b981'; // 正解は緑のボーダー
-        } else {
-            optionElements[selectedOption].classList.add('incorrect');
-            optionElements[currentQuestion.correctAnswerIndex].classList.add('correct'); // 正解も表示
-            feedbackMessageElement.textContent = currentQuestion.incorrectFeedback;
-            feedbackContainer.style.borderLeftColor = '#ef4444'; // 不正解は赤のボーダー
-        }
-
-        explanationTextElement.textContent = `【解説】${currentQuestion.explanation}`;
+      if (currentQuestionIndex >= quizQuestions.length) {
+        questionTextElement.textContent = `クイズ終了！君のスコアは ${score} / ${quizQuestions.length} 問中、正解だったね！お疲れ様！`;
+        optionsContainer.innerHTML = '';
+        submitButton.style.display = 'none';
+        restartButton.style.display = 'block';
+        feedbackMessageElement.textContent = '素晴らしい挑戦だったね！歴史の知識、かなりアップしたんじゃないかな！？';
+        explanationTextElement.textContent = 'もう一度チャレンジして、全問正解を目指そう！';
         feedbackContainer.classList.remove('hidden');
-        submitButton.style.display = 'none'; // 提出ボタンを隠す
-        nextButton.style.display = 'block'; // 次へボタンを表示
+        return;
+      }
+
+      const currentQuestion = quizQuestions[currentQuestionIndex];
+      questionTextElement.textContent = `Q.${currentQuestionIndex + 1} ${currentQuestion.question}`;
+      optionsContainer.innerHTML = '';
+
+      currentQuestion.options.forEach((option, index) => {
+        const optionElement = document.createElement('div');
+        optionElement.classList.add('quiz-option', 'p-3', 'rounded-lg', 'cursor-pointer', 'border-2', 'border-purple-300', 'hover:bg-purple-50', 'transition-colors');
+        optionElement.textContent = option;
+        optionElement.dataset.index = index;
+        optionElement.addEventListener('click', () => selectOption(optionElement, index));
+        optionsContainer.appendChild(optionElement);
+      });
+    }
+
+    function selectOption(element, index) {
+      document.querySelectorAll('.quiz-option').forEach(opt => opt.classList.remove('selected'));
+      element.classList.add('selected');
+      selectedOption = index;
+      submitButton.disabled = false;
+      submitButton.textContent = 'これで答えを提出するぜ！';
+    }
+
+    submitButton.addEventListener('click', () => {
+      if (selectedOption === null) {
+        feedbackMessageElement.textContent = '先に答えを選んでから提出してね！';
+        explanationTextElement.textContent = '';
+        feedbackContainer.classList.remove('hidden');
+        return;
+      }
+
+      const currentQuestion = quizQuestions[currentQuestionIndex];
+      const optionElements = document.querySelectorAll('.quiz-option');
+
+      optionElements.forEach(opt => opt.style.pointerEvents = 'none');
+
+      if (selectedOption === currentQuestion.correctAnswerIndex) {
+        optionElements[selectedOption].classList.add('correct');
+        score++;
+        feedbackMessageElement.textContent = currentQuestion.correctFeedback;
+        feedbackContainer.style.borderLeftColor = '#10b981';
+      } else {
+        optionElements[selectedOption].classList.add('incorrect');
+        optionElements[currentQuestion.correctAnswerIndex].classList.add('correct');
+        feedbackMessageElement.textContent = currentQuestion.incorrectFeedback;
+        feedbackContainer.style.borderLeftColor = '#ef4444';
+      }
+
+      explanationTextElement.textContent = `【解説】${currentQuestion.explanation}`;
+      feedbackContainer.classList.remove('hidden');
+      submitButton.style.display = 'none';
+      nextButton.style.display = 'block';
     });
 
-    // 次の問題へ進む処理
     nextButton.addEventListener('click', () => {
-        currentQuestionIndex++;
-        displayQuestion();
+      currentQuestionIndex++;
+      displayQuestion();
     });
 
-    // クイズを再開する処理
     restartButton.addEventListener('click', () => {
-        currentQuestionIndex = 0;
-        score = 0;
-        restartButton.style.display = 'none';
-        displayQuestion();
+      currentQuestionIndex = 0;
+      score = 0;
+      restartButton.style.display = 'none';
+      displayQuestion();
     });
 
-    // ページロード時にクイズを開始
     document.addEventListener('DOMContentLoaded', () => {
-        displayQuestion();
+      displayQuestion();
     });
-
-</script>
-
-    </body>
-
+  </script>
+</body>
 </html>
